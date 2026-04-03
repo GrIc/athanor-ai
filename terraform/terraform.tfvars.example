@@ -1,1 +1,4 @@
-# TODO
+project_id         = "your-gcp-project-id"
+gcp_region         = "europe-west9"
+openrouter_api_key = "sk-or-v1-your-openrouter-key"
+webui_secret_key   = "generate-with-openssl-rand-hex-32"
