@@ -68,7 +68,7 @@ Transform raw open-source bricks (OpenWebUI, OpenRouter, GCP) into a **sovereign
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/athanor-ai.git
+git clone https://github.com/GrIc/athanor-ai.git
 cd athanor-ai/terraform
 
 # 2. Copy and configure
@@ -126,7 +126,7 @@ Athanor is **OPEX-first**: you only pay for what you use. No fixed costs.
 ┌─────────────────────────────────────────────────────────────────┐
 │                     CLIENTS (Any Device)                        │
 │  VSCode (Roo Code) │ Web Browser │ Mobile PWA │ Home Assistant  │
-└────────────────────────────┬─────────────────────────────────────┘
+└────────────────────────────┬────────────────────────────────────┘
                              │
                       OpenRouter API
                    (single unified endpoint)
@@ -145,18 +145,18 @@ Athanor is **OPEX-first**: you only pay for what you use. No fixed costs.
         ┌────────────────────▼────────────────────┐
         │  GCP Cloud Run (europe-west9 / Paris)   │
         │                                         │
-        │  ┌─────────────────────────────────┐   │
-        │  │     OpenWebUI Container         │   │
-        │  │  • Web/mobile chat interface    │   │
-        │  │  • RAG engine (ChromaDB)        │   │
-        │  │  • Pipelines & Functions        │   │
-        │  │  • Multi-user RBAC              │   │
-        │  └──────────────┬──────────────────┘   │
-        │                 │                      │
-        │    ┌────────────┼────────────┐         │
-        │    ▼            ▼            ▼         │
-        │  GCS Bucket  PostgreSQL  Secret Mgr    │
-        │  (data)      (users)     (credentials) │
+        │  ┌─────────────────────────────────┐    │
+        │  │     OpenWebUI Container         │    │
+        │  │  • Web/mobile chat interface    │    │
+        │  │  • RAG engine (ChromaDB)        │    │
+        │  │  • Pipelines & Functions        │    │
+        │  │  • Multi-user RBAC              │    │
+        │  └──────────────┬──────────────────┘    │
+        │                 │                       │
+        │    ┌────────────┼────────────┐          │
+        │    ▼            ▼            ▼          │
+        │  GCS Bucket  PostgreSQL  Secret Mgr     │
+        │  (data)      (users)     (credentials)  │
         │                                         │
         └────────────────┬────────────────────────┘
                          │
