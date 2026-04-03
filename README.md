@@ -1,6 +1,6 @@
-# Athanor — Personal AI Ecosystem
+# athanor-ai
 
-**Athanor** is an open-source, self-hosted AI platform for families and DevSecOps practitioners.
+A modern AI platform for [describe purpose].
 
 Transform raw open-source bricks (OpenWebUI, OpenRouter, GCP) into a **sovereign, cost-aware, 
 production-grade AI system**. Inspired by the alchemical furnace that runs continuously.
