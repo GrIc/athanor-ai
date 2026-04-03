@@ -1,5 +1,5 @@
 data "google_billing_account" "account" {
-  display_name = "My Billing Account"
+  display_name = "${var.gcp_billing_account_name}"
   open         = true
 }
 

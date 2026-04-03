@@ -78,6 +78,7 @@ cp terraform.tfvars.example terraform.tfvars
 #   gcp_region         = "europe-west9"
 #   openrouter_api_key = "sk-or-v1-xxx"
 #   webui_secret_key   = "$(openssl rand -hex 32)"
+#   gcp_billing_account_name = "My Billing Account"
 
 # 3. Deploy
 terraform init

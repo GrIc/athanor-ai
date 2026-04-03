@@ -73,9 +73,8 @@ resource "google_cloud_run_v2_service" "openwebui" {
     volumes {
       name = "openwebui-data"
       gcs {
-        bucket         = google_storage_bucket.openwebui_data.name
-        read_only      = false
-        path           = "/"
+        bucket    = google_storage_bucket.openwebui_data.name
+        read_only = false
       }
     }
   }

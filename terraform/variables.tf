@@ -3,6 +3,12 @@ variable "project_id" {
   description = "GCP project ID"
 }
 
+variable "gcp_billing_account_name" {
+  type        = string
+  description = "GCP Account Name"
+  sensitive   = true
+}
+
 variable "gcp_region" {
   type        = string
   description = "GCP region for all resources"
