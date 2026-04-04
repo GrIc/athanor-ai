@@ -1,0 +1,3 @@
+project_id               = "My GCP Project ID"
+gcp_region               = "europe-west9"
+gcp_billing_account_name = "My Billing Account Name"

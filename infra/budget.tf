@@ -1,6 +1,7 @@
 data "google_billing_account" "account" {
-  display_name = "${var.gcp_billing_account_name}"
+  display_name = var.gcp_billing_account_name
   open         = true
+  depends_on   = [google_project_service.apis]
 }
 
 resource "google_billing_budget" "monthly_budget" {

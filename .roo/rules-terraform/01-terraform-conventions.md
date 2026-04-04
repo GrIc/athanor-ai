@@ -37,7 +37,7 @@ labels = {
 ## Patterns
 - Cloud Run: always `min_instance_count = 0`
 - Secrets: always via `google_secret_manager_secret_version`, never inline
-- Budget alerts: 50%, 80%, 100% thresholds
+- Budget alerts: 30%, 50%, 80%, 90%, 100% thresholds
 
 ## Validation Before Apply
 1. `terraform fmt -check -recursive`

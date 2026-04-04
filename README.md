@@ -45,7 +45,7 @@ Transform raw open-source bricks (OpenWebUI, OpenRouter, GCP) into a **sovereign
 - **Secret management** — All credentials in GCP Secret Manager, never in code or env vars
 - **IAM least privilege** — Minimal required permissions on Cloud Run service account
 - **Audit logging** — Cloud Logging captures all API requests and user actions
-- **GCP cost tracking** — Real-time monitoring with budget alerts (50%, 80%, 100%)
+- **GCP cost tracking** — Real-time monitoring with budget alerts (30%, 50%, 80%, 90%, 100%)
 - **Carbon footprint** — Track environmental impact via GCP Carbon Footprint API
 
 ### Advanced (Roadmap)

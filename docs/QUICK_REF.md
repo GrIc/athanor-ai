@@ -13,7 +13,7 @@ docker build -t athanor-openwebui:local -f docker/openwebui/Dockerfile .
 ## GCP Project
 - **Project ID**: `athanor-ai`
 - **Region**: `europe-west9` (Paris)
-- **Billing**: Budget alerts at 50/80/100%
+- **Billing**: Budget alerts at 30/50/80/90/100%
 
 ## Key URLs
 - OpenRouter API: `https://openrouter.ai/api/v1`

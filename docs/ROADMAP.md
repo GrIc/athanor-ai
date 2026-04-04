@@ -5,7 +5,7 @@
 - [ ] GCP project setup (Terraform backend, IAM, Artifact Registry)
 - [ ] Deploy OpenWebUI on Cloud Run (europe-west9) with OpenRouter
 - [ ] Configure family accounts (admin + 3 users)
-- [ ] Set up GCP Budget Alerts (50/80/100%)
+- [ ] Set up GCP Budget Alerts (30/50/80/90/100%)
 - [ ] Test mobile access (PWA)
 - [ ] Connect Roo Code / Claude Code to OpenRouter
 

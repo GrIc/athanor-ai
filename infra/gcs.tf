@@ -15,8 +15,7 @@ resource "google_storage_bucket" "openwebui_data" {
       type = "Delete"
     }
     condition {
-      age                   = 90
-      matches_storage_class = ["NEARLINE"]
+      age = 90
     }
   }
 }

@@ -1,7 +1,17 @@
+locals {
+  openwebui_image = var.openwebui_image != "" ? var.openwebui_image : "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/openwebui:latest"
+}
+
 resource "google_cloud_run_v2_service" "openwebui" {
   name     = "athanor-openwebui"
   location = var.gcp_region
   labels   = var.labels
+
+  depends_on = [
+    terraform_data.build_openwebui_image,
+    google_artifact_registry_repository_iam_member.cloudrun_agent_ar_access,
+    google_artifact_registry_repository_iam_member.openwebui_ar_access,
+  ]
 
   template {
     max_instance_request_concurrency = 80
@@ -11,7 +21,7 @@ resource "google_cloud_run_v2_service" "openwebui" {
     }
 
     containers {
-      image = var.openwebui_image
+      image = local.openwebui_image
 
       ports {
         container_port = 8080
@@ -24,6 +34,18 @@ resource "google_cloud_run_v2_service" "openwebui" {
         }
       }
 
+      # OpenWebUI needs time to run DB migrations on first start
+      startup_probe {
+        http_get {
+          path = "/health"
+          port = 8080
+        }
+        initial_delay_seconds = 10
+        period_seconds        = 10
+        failure_threshold     = 30  # 10 + 30*10 = ~5min30s total
+        timeout_seconds       = 5
+      }
+
       env {
         name  = "WEBUI_AUTH"
         value = "true"
@@ -31,17 +53,12 @@ resource "google_cloud_run_v2_service" "openwebui" {
 
       env {
         name  = "WEBUI_URL"
-        value = "https://athanor-openwebui-HASH.run.app" # Update after first deploy
+        value = "https://athanor-openwebui-uhehtuebqq-od.a.run.app"
       }
 
       env {
         name  = "OPENAI_API_BASE_URL"
         value = "https://openrouter.ai/api/v1"
-      }
-
-      env {
-        name  = "PORT"
-        value = "8080"
       }
 
       env {

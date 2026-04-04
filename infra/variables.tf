@@ -17,8 +17,8 @@ variable "gcp_region" {
 
 variable "openwebui_image" {
   type        = string
-  description = "OpenWebUI Docker image"
-  default     = "docker.io/openwebui/open-webui:main"
+  description = "OpenWebUI image in Artifact Registry (built via gcloud builds submit)"
+  default     = ""
 }
 
 variable "openrouter_api_key" {

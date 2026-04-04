@@ -73,9 +73,11 @@ resource "google_secret_manager_secret_version" "api_key" {
 resource "google_billing_budget" "monthly" {
   billing_account = var.billing_account_id
   display_name    = "athanor-monthly-budget"
-  amount { specified_amount { currency_code = "EUR"; units = "50" } }
+  amount { specified_amount { currency_code = "EUR"; units = "30" } }
+  threshold_rules { threshold_percent = 0.3 }   # 30%
   threshold_rules { threshold_percent = 0.5 }   # 50%
   threshold_rules { threshold_percent = 0.8 }   # 80%
+  threshold_rules { threshold_percent = 0.9 }   # 90%
   threshold_rules { threshold_percent = 1.0 }   # 100%
 }
 ```
