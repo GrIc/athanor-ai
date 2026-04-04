@@ -18,7 +18,7 @@ variable "gcp_region" {
 variable "openwebui_image" {
   type        = string
   description = "OpenWebUI Docker image"
-  default     = "ghcr.io/open-webui/open-webui:main"
+  default     = "docker.io/openwebui/open-webui:main"
 }
 
 variable "openrouter_api_key" {

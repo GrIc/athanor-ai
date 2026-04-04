@@ -1,0 +1,52 @@
+{
+  // ══════════════════════════════════════════════════════════
+  // Roo Code Settings — Token Optimization for Athanor
+  // Add these to your .vscode/settings.json
+  // ══════════════════════════════════════════════════════════
+
+  // ── Model Strategy ────────────────────────────────────────
+  // Roo Code uses "Sticky Models" — each mode remembers its last model.
+  // Strategy: assign cheap models to cheap tasks.
+  //
+  // Recommended model assignments (set via Roo UI, persists automatically):
+  //   Architect mode → Claude Sonnet 4.6 via OpenRouter (planning needs quality)
+  //   Code mode      → Claude Sonnet 4.6 via OpenRouter (default workhorse)
+  //   Ask mode       → DeepSeek or free model via OpenRouter (just Q&A)
+  //   Debug mode     → Claude Sonnet 4.6 via OpenRouter (needs reasoning)
+  //   Reviewer mode  → DeepSeek V3 or Llama via OpenRouter (read-only, cheap)
+  //   Terraform mode → Claude Sonnet 4.6 via OpenRouter (needs precision)
+  //   Cloud Run mode → Claude Sonnet 4.6 via OpenRouter
+
+  // ── Context Optimization ──────────────────────────────────
+  // Keep Max Tokens LOW for Code mode (saves thinking tokens)
+  // Use higher Max Tokens only for Architect/Debug when planning
+  //
+  // In Roo Code settings per profile:
+  //   Code mode:      Max Output Tokens = 16384
+  //   Architect mode: Max Output Tokens = 32768
+  //   Debug mode:     Max Output Tokens = 32768
+  //   Reviewer mode:  Max Output Tokens = 8192  (just needs to list issues)
+  //   Ask mode:       Max Output Tokens = 8192
+
+  // ── MCP Optimization ──────────────────────────────────────
+  // IMPORTANT: Disable MCP if not using it! MCP descriptions consume ~16k chars
+  // of system prompt on EVERY request. Only enable when you actually need MCP.
+  //
+  // If using MCP, only enable servers you actively need per session.
+
+  // ── Roo Code Extension Settings ───────────────────────────
+  "roo-code.contextLimit": 0.8,
+  // ^ Keep context usage below 80% to avoid costly auto-condensing
+
+  // ── General VSCode Settings for the Project ───────────────
+  "editor.formatOnSave": true,
+  "files.trimTrailingWhitespace": true,
+  "[terraform]": {
+    "editor.defaultFormatter": "hashicorp.terraform",
+    "editor.formatOnSave": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  }
+}
