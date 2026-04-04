@@ -15,3 +15,10 @@ __pycache__/
 
 # Docker
 node_modules/
+
+# Sensitive files
+docs/FAMILY.md
+docs/OPENROUTER.md
+docs/HOME-ASSISTANT.md
+docs/OPENWEBUI.md
+docs/FINOPS.md

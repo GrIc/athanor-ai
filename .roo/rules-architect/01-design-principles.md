@@ -5,7 +5,7 @@
 2. **Modular**: each component is a replaceable container
 3. **EU sovereign**: all data in europe-west9, Proton Drive as family data source
 4. **Observable**: cost, performance, and carbon tracked from day 1
-5. **Maintainable**: if Guillaume can't maintain it alone in 6 months, it's too complex
+5. **Maintainable**: if it can't maintain it alone in 6 months, it's too complex
 
 ## Architecture Decisions
 - Always document decisions in `docs/DECISIONS.md` (ADR format)

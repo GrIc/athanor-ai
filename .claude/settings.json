@@ -1,0 +1,30 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(terraform:*)",
+      "Bash(gcloud:*)",
+      "Bash(docker:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "deny": []
+  },
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
+    "MAX_THINKING_TOKENS": "10000",
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1"
+  }
+}
