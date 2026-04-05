@@ -1,22 +1,16 @@
-data "google_billing_account" "account" {
-  display_name = var.gcp_billing_account_name
-  open         = true
-  depends_on   = [google_project_service.apis]
-}
-
 resource "google_billing_budget" "monthly_budget" {
-  display_name = "Athanor Monthly Budget"
-  billing_account = data.google_billing_account.account.id
+  display_name    = "Athanor Monthly Budget"
+  billing_account = var.gcp_billing_account_id
 
   budget_filter {
-    projects = ["projects/${var.project_id}"]
+    projects               = ["projects/${var.project_id}"]
     credit_types_treatment = "EXCLUDE_ALL_CREDITS"
   }
 
   amount {
     specified_amount {
       currency_code = "EUR"
-      units        = "30"
+      units         = "30"
     }
   }
 

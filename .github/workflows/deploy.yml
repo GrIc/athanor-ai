@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Required for Workload Identity Federation
+  id-token: write # Required for Workload Identity Federation
 
 jobs:
   terraform:
@@ -43,4 +43,4 @@ jobs:
           TF_VAR_openrouter_api_key: ${{ secrets.TF_VAR_OPENROUTER_API_KEY }}
           TF_VAR_webui_secret_key: ${{ secrets.TF_VAR_WEBUI_SECRET_KEY }}
           TF_VAR_vertexai_proxy_api_key: ${{ secrets.TF_VAR_VERTEXAI_PROXY_API_KEY }}
-          TF_VAR_gcp_billing_account_name: ${{ secrets.TF_VAR_GCP_BILLING_ACCOUNT_NAME }}
+          TF_VAR_gcp_billing_account_id: ${{ secrets.TF_VAR_GCP_BILLING_ACCOUNT_ID }}

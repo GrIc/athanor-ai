@@ -3,9 +3,9 @@ variable "project_id" {
   description = "GCP project ID"
 }
 
-variable "gcp_billing_account_name" {
+variable "gcp_billing_account_id" {
   type        = string
-  description = "GCP Account Name"
+  description = "GCP Billing Account ID (e.g. XXXXXX-XXXXXX-XXXXXX)"
   sensitive   = true
 }
 
