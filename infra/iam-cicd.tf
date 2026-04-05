@@ -67,6 +67,13 @@ resource "google_project_iam_member" "cicd_cloud_build" {
   member  = "serviceAccount:${google_service_account.cicd.email}"
 }
 
+# Billing account access — required to manage billing budgets
+resource "google_billing_account_iam_member" "cicd_billing_admin" {
+  billing_account_id = var.gcp_billing_account_id
+  role               = "roles/billing.admin"
+  member             = "serviceAccount:${google_service_account.cicd.email}"
+}
+
 # GCS access for Terraform state
 resource "google_storage_bucket_iam_member" "cicd_tfstate" {
   bucket = "athanor-ai-tfstate"
