@@ -49,15 +49,6 @@ resource "google_project_iam_member" "cicd_editor" {
   member  = "serviceAccount:${google_service_account.cicd.email}"
 }
 
-# Billing read access (required for google_billing_account data source)
-# Must be on the billing account itself, not the project
-# Uses the variable directly to avoid circular dependency with the data source
-resource "google_billing_account_iam_member" "cicd_billing_viewer" {
-  billing_account_id = var.gcp_billing_account_id
-  role               = "roles/billing.viewer"
-  member             = "serviceAccount:${google_service_account.cicd.email}"
-}
-
 resource "google_project_iam_member" "cicd_secret_manager" {
   project = var.project_id
   role    = "roles/secretmanager.admin"
