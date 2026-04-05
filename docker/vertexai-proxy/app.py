@@ -27,13 +27,12 @@ VERTEXAI_BASE_URL = (
 # Gemini models available on VertexAI in europe-west9.
 # Update this list when Google adds new models to the region.
 AVAILABLE_MODELS = [
-    "gemini-2.5-pro",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-pro",
-    "gemini-1.5-flash",
-    "text-embedding-005",
+    "google/gemini-3.1-pro-preview",
+    "google/gemini-3.1-flash-lite-preview"
+    "google/gemini-3-flash-preview",
+    "google/gemini-2.5-pro",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-lite",
 ]
 
 # Google credentials with automatic token caching and refresh.
@@ -64,7 +63,6 @@ def _verify_api_key(request: Request) -> None:
     key = _extract_api_key(request)
     if not key or key != PROXY_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
-
 
 def _build_models_response() -> dict:
     """Return an OpenAI-compatible /models response with available Gemini models."""
