@@ -2,6 +2,11 @@ resource "google_billing_budget" "monthly_budget" {
   display_name    = "Athanor Monthly Budget"
   billing_account = var.gcp_billing_account_id
 
+  depends_on = [
+    google_project_service.apis,
+    google_billing_account_iam_member.cicd_billing_admin,
+  ]
+
   budget_filter {
     projects               = ["projects/${var.project_id}"]
     credit_types_treatment = "EXCLUDE_ALL_CREDITS"
