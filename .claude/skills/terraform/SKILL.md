@@ -4,7 +4,7 @@ description: >
   GCP Terraform IaC for the Athanor project. Use when working on infra/,
   creating or modifying GCP resources, writing Terraform modules, or
   planning infrastructure changes. Covers Cloud Run, GCS, IAM, Secret
-  Manager, Cloud SQL, Artifact Registry, Budget Alerts.
+  Manager, Artifact Registry, Budget Alerts, WIF.
 tools: Read, Edit, Write, Bash, Glob, Grep
 ---
 
@@ -12,83 +12,68 @@ tools: Read, Edit, Write, Bash, Glob, Grep
 
 ## Project Conventions
 
-- **Provider**: `google` and `google-beta`, pinned version in `infra/versions.tf`
-- **Backend**: GCS bucket for remote state (`athanor-ai-tfstate`)
-- **Region**: `europe-west9` (Paris) — hardcoded as default, never US
-- **Naming**: `athanor-{component}-{env}` (e.g., `athanor-openwebui-prod`)
-- **Labels on EVERY resource**:
-  ```hcl
-  labels = {
-    project     = "athanor"
-    environment = var.environment
-    managed_by  = "terraform"
-  }
-  ```
+- **Provider**: `google`, pinned version in `infra/providers.tf`
+- **Backend**: GCS bucket (`athanor-ai-tfstate`, prefix `terraform/state`)
+- **Region**: `europe-west9` (Paris) — hardcoded default
+- **Naming**: `athanor-{component}` (e.g., `athanor-openwebui`, `athanor-vertexai-proxy`)
+- **Labels on EVERY resource**: `var.labels`
+- **CI/CD**: GitHub Actions + Workload Identity Federation (no long-lived keys)
 
-## Module Structure
+## File Structure (flat)
 
 ```
 infra/
-├── main.tf              # Root module, calls child modules
-├── variables.tf         # Root variables
-├── outputs.tf           # Root outputs
-├── versions.tf          # Provider + backend config
-├── envs/
-│   ├── prod.tfvars
-│   └── dev.tfvars
-└── modules/
-    ├── cloud-run/       # Cloud Run service definition
-    ├── gcs/             # GCS buckets
-    ├── iam/             # Service accounts, IAM bindings
-    ├── secrets/         # Secret Manager secrets
-    ├── monitoring/      # Budget alerts, uptime checks
-    └── registry/        # Artifact Registry
+├── providers.tf          # google provider + GCS backend
+├── apis.tf               # GCP API enablement
+├── variables.tf          # Root variables
+├── outputs.tf            # Service URLs, bucket names, WIF values
+├── cloud-run.tf          # OpenWebUI + VertexAI Proxy + secrets
+├── gcs.tf                # GCS buckets (data)
+├── iam.tf                # Service account permissions
+├── iam-cicd.tf           # WIF pool + CI service account
+├── artifact-registry.tf  # Container registry + Cloud Build triggers
+├── budget.tf             # Budget alerts
+└── envs/
+    ├── prod.tfvars           # Non-secret variables
+    └── .env.prod.example     # Secret env vars template (local only)
 ```
 
 ## Key Patterns
 
 ### Cloud Run — Scale-to-Zero
-
 ```hcl
-# IMPORTANT: Always set these for zero-cost-at-rest
 scaling {
-  min_instance_count = 0   # Scale to zero!
-  max_instance_count = 2   # Cost cap
+  min_instance_count = 0   # MANDATORY
+  max_instance_count = 1   # Cost cap
+}
+```
+
+### Image builds — automatic on code change
+```hcl
+resource "terraform_data" "build_vertexai_proxy_image" {
+  triggers_replace = [
+    filemd5("${path.module}/../docker/vertexai-proxy/app.py"),
+    # ... other source files
+  ]
+  provisioner "local-exec" {
+    command = "gcloud builds submit ... --tag ..."
+  }
 }
 ```
 
 ### Secrets — Never Inline
-
 ```hcl
-# Always reference secrets via Secret Manager
 resource "google_secret_manager_secret_version" "api_key" {
-  secret      = google_secret_manager_secret.openrouter_key.id
-  secret_data = var.openrouter_api_key  # Passed via tfvars or CI/CD
-}
-```
-
-### Budget Alerts — Day 1
-
-```hcl
-resource "google_billing_budget" "monthly" {
-  billing_account = var.billing_account_id
-  display_name    = "athanor-monthly-budget"
-  amount { specified_amount { currency_code = "EUR"; units = "30" } }
-  threshold_rules { threshold_percent = 0.3 }   # 30%
-  threshold_rules { threshold_percent = 0.5 }   # 50%
-  threshold_rules { threshold_percent = 0.8 }   # 80%
-  threshold_rules { threshold_percent = 0.9 }   # 90%
-  threshold_rules { threshold_percent = 1.0 }   # 100%
+  secret      = google_secret_manager_secret.my_key.id
+  secret_data = var.my_api_key  # Passed via tfvars or CI/CD secrets
 }
 ```
 
 ## Validation Checklist
 
-Before applying any Terraform change:
-
 1. `terraform fmt -check -recursive`
 2. `terraform validate`
-3. `terraform plan -var-file=envs/prod.tfvars` — review the plan
-4. Confirm no resources are created outside `europe-west9` / `europe-west1`
-5. Confirm all resources have the required labels
-6. Confirm no secrets are in plaintext
+3. `terraform plan -var-file=envs/prod.tfvars`
+4. No resources outside `europe-west9` / `europe-west1`
+5. All resources have labels
+6. No secrets in plaintext

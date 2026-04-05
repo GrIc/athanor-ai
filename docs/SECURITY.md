@@ -39,9 +39,9 @@ All secrets stored in GCP Secret Manager, mounted as env vars in Cloud Run:
 - No data replication outside EU
 
 ### Data Flow Through LLM Providers
-- Prompts transit through OpenRouter → LLM provider (Anthropic, OpenAI, etc.)
-- OpenRouter privacy: prompts not stored (verify their current policy)
-- For highly sensitive data: consider local models via Ollama on Cloud Run (GPU) or Raspberry Pi
+- **OpenRouter channel**: prompts transit through OpenRouter → LLM provider (Anthropic, OpenAI, etc.)
+- **VertexAI channel**: prompts stay within GCP (europe-west9) → Gemini models
+- For highly sensitive data: use VertexAI connection (no data leaves GCP)
 
 ### Proton Drive
 - Source of truth for family documents (E2E encrypted)

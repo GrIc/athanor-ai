@@ -12,3 +12,8 @@ output "openwebui_service_name" {
   value       = google_cloud_run_v2_service.openwebui.name
   description = "Cloud Run service name"
 }
+
+output "vertexai_proxy_url" {
+  value       = google_cloud_run_v2_service.vertexai_proxy.uri
+  description = "VertexAI Proxy Cloud Run URL"
+}

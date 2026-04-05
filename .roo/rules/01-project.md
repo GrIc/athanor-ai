@@ -1,7 +1,7 @@
 # Athanor — Global Rules (All Modes)
 
 ## Project Identity
-Athanor: self-hosted family AI platform — OpenWebUI + OpenRouter on GCP Cloud Run (europe-west9).
+Athanor: self-hosted family AI platform — OpenWebUI + OpenRouter + VertexAI Proxy on GCP Cloud Run (europe-west9).
 Repo: `athanor-ai` | License: Apache 2.0 | All code, docs, commits: **English only**.
 
 ## Critical Rules — NEVER Violate
@@ -14,21 +14,23 @@ Repo: `athanor-ai` | License: Apache 2.0 | All code, docs, commits: **English on
 ## Project Structure
 ```
 athanor-ai/
-├── infra/              # Terraform (modules/, envs/)
-├── docker/             # Custom Dockerfiles
+├── infra/              # Terraform (flat structure, envs/ for tfvars)
+├── docker/             # Custom Dockerfiles (openwebui, vertexai-proxy)
 ├── pipelines/          # OpenWebUI pipelines (Python)
-├── scripts/            # Utility scripts
+├── scripts/            # Utility scripts (setup, deploy)
 ├── docs/               # Extended docs (see docs/INDEX.md)
-└── .roo/               # Roo Code rules and modes
+├── .roo/               # Roo Code rules and modes
+└── .claude/            # Claude Code config, skills, hooks, agents
 ```
 
 ## Tech Stack
-- IaC: Terraform + GCP provider
+- IaC: Terraform + GCS backend (`athanor-ai-tfstate`)
 - Runtime: Cloud Run (europe-west9), scale-to-zero
-- LLM: OpenRouter (`https://openrouter.ai/api/v1`)
+- LLM: OpenRouter (200+ models) + VertexAI Proxy (Gemini, EU sovereign)
 - Frontend: OpenWebUI (`ghcr.io/open-webui/open-webui:main`)
 - Secrets: GCP Secret Manager
-- CI/CD: GitHub Actions
+- CI/CD: GitHub Actions + Workload Identity Federation (no long-lived keys)
+- Container registry: Artifact Registry (`athanor-images`)
 
 ## Response Style
 - Be concise — no fluff, no preamble

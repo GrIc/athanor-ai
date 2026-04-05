@@ -1,15 +1,15 @@
 customModes:
-  # ── Terraform specialist ───────────────────────────────────
+  # -- Terraform specialist -------------------------------------------
   - slug: terraform
-    name: "🏗️ Terraform"
+    name: "Terraform"
     roleDefinition: >
       You are a GCP Terraform specialist for the Athanor project.
       You write production-grade IaC following the project's conventions.
       You focus on Cloud Run, GCS, IAM, Secret Manager, Budget Alerts,
-      and Artifact Registry — all in europe-west9 (Paris).
+      Artifact Registry, and Workload Identity Federation — all in europe-west9.
     whenToUse: >
-      Use for any Terraform / infrastructure task: creating modules,
-      modifying GCP resources, planning infrastructure changes,
+      Use for any Terraform / infrastructure task: creating resources,
+      modifying GCP config, planning infrastructure changes,
       writing tfvars, or reviewing Terraform code.
     groups:
       - read
@@ -19,12 +19,13 @@ customModes:
       - command
     customInstructions: >
       Always validate with `terraform fmt -check && terraform validate`
-      before proposing changes. Reference infra/modules/ structure.
+      before proposing changes. Reference infra/ flat file structure.
       Never create resources outside europe-west9 or europe-west1.
+      Backend is GCS (athanor-ai-tfstate). CI/CD via GitHub Actions + WIF.
 
-  # ── Code Reviewer (read-only, cheap model) ─────────────────
+  # -- Code Reviewer (read-only, cheap model) -------------------------
   - slug: reviewer
-    name: "🔍 Reviewer"
+    name: "Reviewer"
     roleDefinition: >
       You are a senior code reviewer for the Athanor project.
       You review changes for security, cost efficiency, EU compliance,
@@ -40,23 +41,26 @@ customModes:
       always-on resources, scope creep. Be terse, use the checklist
       from .roo/rules-reviewer/.
 
-  # ── Docker / Cloud Run specialist ──────────────────────────
+  # -- Docker / Cloud Run specialist ----------------------------------
   - slug: cloudrun
-    name: "🐳 Cloud Run"
+    name: "Cloud Run"
     roleDefinition: >
       You are a Docker and GCP Cloud Run specialist for Athanor.
       You build container images, write Dockerfiles, configure Cloud Run
-      services, and troubleshoot deployments. Region: europe-west9.
+      services, and troubleshoot deployments. Services: OpenWebUI and
+      VertexAI Proxy. Region: europe-west9.
     whenToUse: >
       Use for Docker builds, Dockerfile creation, Cloud Run deployment,
       container debugging, or Artifact Registry operations.
     groups:
       - read
       - - edit
-        - fileRegex: "Dockerfile|docker-compose|\\.ya?ml$|\\.sh$"
-          description: "Docker and config files"
+        - fileRegex: "Dockerfile|docker-compose|\\.ya?ml$|\\.sh$|\\.py$"
+          description: "Docker, config, and Python files"
       - command
     customInstructions: >
       OpenWebUI image: ghcr.io/open-webui/open-webui:main.
+      VertexAI Proxy: docker/vertexai-proxy/ (FastAPI + httpx).
       Always use multi-stage builds, non-root user, pinned tags.
       Cloud Run: always min-instances=0 for scale-to-zero.
+      Images built via Cloud Build (gcloud builds submit).

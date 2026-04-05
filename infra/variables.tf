@@ -45,12 +45,18 @@ variable "cloud_run_min_instances" {
   default     = 0
 }
 
+variable "vertexai_proxy_api_key" {
+  type        = string
+  description = "API key for the VertexAI proxy (used by OpenWebUI to authenticate)"
+  sensitive   = true
+}
+
 variable "labels" {
   type        = map(string)
   description = "Default labels for all resources"
   default = {
-    project     = "athanor"
-    env         = "prod"
-    managed-by  = "terraform"
+    project    = "athanor"
+    env        = "prod"
+    managed-by = "terraform"
   }
 }

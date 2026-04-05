@@ -1,5 +1,6 @@
 locals {
-  openwebui_image = var.openwebui_image != "" ? var.openwebui_image : "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/openwebui:latest"
+  openwebui_image      = var.openwebui_image != "" ? var.openwebui_image : "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/openwebui:latest"
+  vertexai_proxy_image = "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/vertexai-proxy:latest"
 }
 
 resource "google_cloud_run_v2_service" "openwebui" {
@@ -42,7 +43,7 @@ resource "google_cloud_run_v2_service" "openwebui" {
         }
         initial_delay_seconds = 10
         period_seconds        = 10
-        failure_threshold     = 30  # 10 + 30*10 = ~5min30s total
+        failure_threshold     = 30 # 10 + 30*10 = ~5min30s total
         timeout_seconds       = 5
       }
 
@@ -128,6 +129,98 @@ resource "google_secret_manager_secret_version" "webui_secret_key" {
 resource "google_cloud_run_v2_service_iam_member" "public_access" {
   location = google_cloud_run_v2_service.openwebui.location
   name     = google_cloud_run_v2_service.openwebui.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ─── VertexAI Proxy ──────────────────────────────────────────────────────
+
+resource "google_cloud_run_v2_service" "vertexai_proxy" {
+  name     = "athanor-vertexai-proxy"
+  location = var.gcp_region
+  labels   = var.labels
+
+  depends_on = [
+    terraform_data.build_vertexai_proxy_image,
+    google_artifact_registry_repository_iam_member.cloudrun_agent_ar_access,
+    google_artifact_registry_repository_iam_member.openwebui_ar_access,
+  ]
+
+  template {
+    max_instance_request_concurrency = 1
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 1
+    }
+
+    containers {
+      image = local.vertexai_proxy_image
+
+      ports {
+        container_port = 8080
+      }
+
+      startup_probe {
+        http_get {
+          path = "/health"
+          port = 8080
+        }
+        initial_delay_seconds = 5
+        period_seconds        = 10
+        failure_threshold     = 6 # 5 + 6*10 = ~65s total
+        timeout_seconds       = 5
+      }
+
+      resources {
+        limits = {
+          memory = "512Mi"
+          cpu    = "1"
+        }
+      }
+
+      env {
+        name  = "VERTEXAI_PROJECT_ID"
+        value = var.project_id
+      }
+
+      env {
+        name  = "VERTEXAI_LOCATION"
+        value = var.gcp_region
+      }
+
+      env {
+        name = "PROXY_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.vertexai_proxy_api_key.id
+            version = "latest"
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "vertexai_proxy_api_key" {
+  secret_id = "athanor-vertexai-proxy-api-key"
+  labels    = var.labels
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "vertexai_proxy_api_key" {
+  secret      = google_secret_manager_secret.vertexai_proxy_api_key.id
+  secret_data = var.vertexai_proxy_api_key
+}
+
+# Public access — Cloud Run IAM layer bypassed; app-level auth via PROXY_API_KEY.
+# OpenWebUI cannot attach OIDC tokens to outbound HTTP calls, so allUsers is
+# required here. The PROXY_API_KEY env var provides the real access control.
+resource "google_cloud_run_v2_service_iam_member" "vertexai_proxy_public_access" {
+  location = google_cloud_run_v2_service.vertexai_proxy.location
+  name     = google_cloud_run_v2_service.vertexai_proxy.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

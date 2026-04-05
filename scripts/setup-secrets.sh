@@ -47,10 +47,18 @@ if [ -z "$WEBUI_SECRET" ]; then
     exit 1
 fi
 
+read -sp "VertexAI Proxy API Key: " VERTEXAI_PROXY_KEY
+echo
+if [ -z "$VERTEXAI_PROXY_KEY" ]; then
+    echo "❌ VertexAI Proxy API key is required."
+    exit 1
+fi
+
 # Create .env.prod file
 cat > "$ENV_FILE" << EOF
 export TF_VAR_openrouter_api_key="$OPENROUTER_KEY"
 export TF_VAR_webui_secret_key="$WEBUI_SECRET"
+export TF_VAR_vertexai_proxy_api_key="$VERTEXAI_PROXY_KEY"
 EOF
 
 chmod 600 "$ENV_FILE"

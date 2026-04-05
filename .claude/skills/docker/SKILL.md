@@ -13,39 +13,35 @@ tools: Read, Edit, Write, Bash, Glob, Grep
 
 - **Registry**: `europe-west9-docker.pkg.dev/athanor-ai/athanor-images`
 - **Auth**: `gcloud auth configure-docker europe-west9-docker.pkg.dev`
+- **Build**: Cloud Build (via `gcloud builds submit`), not local Docker
+
+## Images
+
+| Image | Source | Built by |
+|-------|--------|----------|
+| `openwebui:latest` | `docker/openwebui/Dockerfile` | Cloud Build (terraform_data trigger) |
+| `vertexai-proxy:latest` | `docker/vertexai-proxy/Dockerfile` | Cloud Build (terraform_data trigger) |
+
+Both images are rebuilt automatically when their source files change (via `filemd5()` triggers in `infra/artifact-registry.tf`).
 
 ## Dockerfile Standards
 
 - Multi-stage builds to minimize image size
 - Non-root user (`USER 1001`)
-- Pinned base image tags (no `:latest` in production)
-- `HEALTHCHECK` instruction where applicable
+- Pinned base image tags (no `:latest` in production Dockerfiles)
+- `HEALTHCHECK` instruction
 - Labels: `org.opencontainers.image.source`, `org.opencontainers.image.version`
 
-## Custom OpenWebUI Image (when needed)
-
-```dockerfile
-FROM docker.io/open-webui/open-webui:main AS base
-
-# Add custom pipelines
-COPY pipelines/ /app/backend/pipelines/
-
-# Add custom tools
-COPY tools/ /app/backend/tools/
-
-# No need to change CMD — OpenWebUI handles it
-```
-
-## Build & Push
+## Build & Push (manual, if needed)
 
 ```bash
-# Build locally
-docker build -t athanor-openwebui:local -f docker/openwebui/Dockerfile .
+# Build via Cloud Build (preferred — same as CI/CD)
+gcloud builds submit docker/vertexai-proxy \
+  --tag europe-west9-docker.pkg.dev/athanor-ai/athanor-images/vertexai-proxy:latest \
+  --project athanor-ai
 
-# Tag for Artifact Registry
-docker tag athanor-openwebui:local \
-  europe-west9-docker.pkg.dev/athanor-ai/athanor-images/openwebui:$(git rev-parse --short HEAD)
-
-# Push
-docker push europe-west9-docker.pkg.dev/athanor-ai/athanor-images/openwebui:$(git rev-parse --short HEAD)
+# Then update Cloud Run to use the new image
+gcloud run services update athanor-vertexai-proxy \
+  --region europe-west9 \
+  --image europe-west9-docker.pkg.dev/athanor-ai/athanor-images/vertexai-proxy:latest
 ```

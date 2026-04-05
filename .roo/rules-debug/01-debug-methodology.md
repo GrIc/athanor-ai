@@ -3,7 +3,7 @@
 ## Methodology
 1. **Reproduce first** — confirm the issue before proposing a fix
 2. **Read logs** — always check Cloud Run logs or Terraform output first
-3. **Narrow scope** — identify the specific component (Cloud Run, Terraform, OpenWebUI, OpenRouter)
+3. **Narrow scope** — identify the specific component (Cloud Run, Terraform, OpenWebUI, OpenRouter, VertexAI Proxy)
 4. **One hypothesis at a time** — test, confirm/deny, then move to the next
 
 ## Common Debug Paths
@@ -11,7 +11,9 @@
 ### Cloud Run issues
 ```bash
 gcloud run services logs read athanor-openwebui --region europe-west9 --limit 50
+gcloud run services logs read athanor-vertexai-proxy --region europe-west9 --limit 50
 gcloud run services describe athanor-openwebui --region europe-west9
+gcloud run services describe athanor-vertexai-proxy --region europe-west9
 ```
 
 ### Terraform issues
@@ -23,6 +25,13 @@ terraform -chdir=infra state list
 ### OpenRouter connectivity
 ```bash
 curl -s -H "Authorization: Bearer $OPENROUTER_KEY" https://openrouter.ai/api/v1/models | head -20
+```
+
+### VertexAI Proxy connectivity
+```bash
+curl -s https://athanor-vertexai-proxy-uhehtuebqq-od.a.run.app/health
+curl -s -H "Authorization: Bearer $PROXY_KEY" \
+  https://athanor-vertexai-proxy-uhehtuebqq-od.a.run.app/v1/models
 ```
 
 ## Rules

@@ -37,3 +37,17 @@ resource "google_storage_bucket_iam_member" "openwebui_data_access" {
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
 }
+
+# Grant VertexAI access to default compute service account
+resource "google_project_iam_member" "openwebui_vertexai_access" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
+}
+
+# Grant proxy access to the VertexAI proxy API key secret
+resource "google_secret_manager_secret_iam_member" "vertexai_proxy_api_key_access" {
+  secret_id = google_secret_manager_secret.vertexai_proxy_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
+}

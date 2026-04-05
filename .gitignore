@@ -2,8 +2,8 @@
 .terraform/
 *.tfstate
 *.tfstate.backup
-.terraform.lock.hcl
 terraform.tfvars
+.terraform.tfstate.lock.info
 
 # Python files
 __pycache__/
@@ -26,4 +26,5 @@ docs/HOME-ASSISTANT.md
 docs/OPENWEBUI.md
 docs/FINOPS.md
 infra/envs/*
-!infra/envs/terraform.tfvars.example
+!infra/envs/.env.prod.example
+.terraform.lock.hcl

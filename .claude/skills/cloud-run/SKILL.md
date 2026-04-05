@@ -9,77 +9,67 @@ tools: Read, Edit, Write, Bash, Glob, Grep
 
 # Cloud Run Skill — Athanor Project
 
-## OpenWebUI Deployment
+## Services
 
-**Image**: `ghcr.io/open-webui/open-webui:main` (or pinned tag)
-**Region**: `europe-west9` (Paris)
-**Port**: 8080 (OpenWebUI default)
+### OpenWebUI
+- **Image**: `ghcr.io/open-webui/open-webui:main` (or custom from Artifact Registry)
+- **Service name**: `athanor-openwebui`
+- **Port**: 8080
+- **Access**: public (`allUsers` → `roles/run.invoker`)
+
+### VertexAI Proxy
+- **Image**: `europe-west9-docker.pkg.dev/athanor-ai/athanor-images/vertexai-proxy:latest`
+- **Service name**: `athanor-vertexai-proxy`
+- **Port**: 8080
+- **Access**: public (app-level auth via `PROXY_API_KEY`)
+- **Source**: `docker/vertexai-proxy/` (FastAPI + httpx + google-auth)
+
+Both services: **region europe-west9**, **min instances 0** (scale-to-zero).
 
 ### Required Environment Variables
 
+**OpenWebUI:**
 ```
 OPENAI_API_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_API_KEY=<from Secret Manager>
 WEBUI_SECRET_KEY=<from Secret Manager>
 WEBUI_AUTH=true
-DATABASE_URL=<Cloud SQL connection string or omit for SQLite>
 ```
 
-### Scale-to-Zero Config
-
-```yaml
-# Cloud Run service spec essentials
-scaling:
-  minInstanceCount: 0 # MANDATORY — zero cost at rest
-  maxInstanceCount: 2 # Cost cap
-resources:
-  limits:
-    cpu: "1"
-    memory: "1Gi" # OpenWebUI needs ~512Mi minimum
-startupProbe:
-  httpGet:
-    path: /health
-    port: 8080
-  initialDelaySeconds: 10
-  periodSeconds: 5
+**VertexAI Proxy:**
+```
+VERTEXAI_PROJECT_ID=athanor-ai
+VERTEXAI_LOCATION=europe-west9
+PROXY_API_KEY=<from Secret Manager>
 ```
 
-### Cold Start Optimization
+## GCS FUSE for SQLite (current MVP)
 
-- OpenWebUI cold start: ~15-30s depending on memory
-- Set `cpu-boost` on Cloud Run for faster startup
-- Consider `min-instances: 1` ONLY if family uses it daily (adds ~€15/mo)
-
-## GCS FUSE for SQLite (MVP)
-
-```
-# Mount GCS bucket as filesystem for SQLite persistence
-# Add to Cloud Run: --execution-environment gen2 --add-volume=...
+```hcl
 volume:
   name: gcs-fuse
   gcs:
-    bucket: athanor-openwebui-data
+    bucket: athanor-ai-athanor-data
     readOnly: false
 volumeMount:
   name: gcs-fuse
   mountPath: /app/backend/data
 ```
 
-⚠️ SQLite + GCS FUSE has concurrency limits. Fine for MVP (1 family), migrate to Cloud SQL for multi-user production.
+SQLite + GCS FUSE has concurrency limits. Fine for family use. Migrate to Cloud SQL PostgreSQL when needed.
 
 ## Useful Commands
 
 ```bash
-# Deploy new revision
-gcloud run deploy athanor-openwebui \
-  --image ghcr.io/open-webui/open-webui:main \
-  --region europe-west9 \
-  --allow-unauthenticated \
-  --set-secrets "OPENAI_API_KEY=openrouter-key:latest,WEBUI_SECRET_KEY=webui-secret:latest"
-
 # Check logs
 gcloud run services logs read athanor-openwebui --region europe-west9 --limit 50
+gcloud run services logs read athanor-vertexai-proxy --region europe-west9 --limit 50
 
 # Check current revision
 gcloud run revisions list --service athanor-openwebui --region europe-west9
+gcloud run revisions list --service athanor-vertexai-proxy --region europe-west9
+
+# Force redeploy (same image, new revision)
+gcloud run services update athanor-openwebui --region europe-west9 \
+  --image <current-image>
 ```

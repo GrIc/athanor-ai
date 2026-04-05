@@ -7,6 +7,11 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "gcs" {
+    bucket = "athanor-ai-tfstate"
+    prefix = "terraform/state"
+  }
 }
 
 provider "google" {
