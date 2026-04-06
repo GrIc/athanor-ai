@@ -121,7 +121,11 @@ athanor-ai/
 ├── .github/workflows/deploy.yml   # CI/CD — terraform apply on push
 ├── docker/
 │   ├── openwebui/                 # Custom OpenWebUI image
-│   └── vertexai-proxy/            # OpenAI-compatible Vertex AI proxy
+│   ├── vertexai-proxy/            # OpenAI-compatible Vertex AI proxy
+│   └── weekly-digest/             # Weekly parental digest (Cloud Run Job)
+├── pipelines/
+│   └── filters/
+│       └── parental_monitor.py    # OpenWebUI filter — keyword-based alerts
 ├── infra/                         # Terraform (all GCP resources)
 │   ├── apis.tf                    # GCP API enablement
 │   ├── artifact-registry.tf       # Container registry + Cloud Build
@@ -129,6 +133,7 @@ athanor-ai/
 │   ├── gcs.tf                     # GCS buckets
 │   ├── iam.tf                     # Service account permissions
 │   ├── iam-cicd.tf                # WIF pool + CI service account
+│   ├── monitoring.tf              # Parental monitoring (Cloud Run Job + Scheduler)
 │   ├── providers.tf               # GCS backend config
 │   ├── variables.tf               # Input variables
 │   ├── outputs.tf                 # Service URLs, bucket names
@@ -136,8 +141,7 @@ athanor-ai/
 │       ├── prod.tfvars            # Non-secret variables
 │       └── .env.prod.example      # Secret variables template (local only)
 ├── scripts/
-│   ├── setup-secrets.sh           # Interactive secret setup for local deploy
-│   └── setup-gcp.sh               # GCP project bootstrap
+│   └── setup-secrets.sh           # Interactive secret setup for local deploy
 └── docs/                          # Extended documentation
 ```
 
@@ -167,9 +171,10 @@ Free OpenRouter models (Llama, Mistral) bring family usage to near €0.
 - [x] GCS Terraform state backend
 
 ### Phase 2 — Multi-user & observability
+- [x] Parental monitoring (keyword alerts + weekly digest)
 - [ ] PostgreSQL migration (replace SQLite)
 - [ ] Langfuse monitoring (per-user cost & latency)
-- [ ] Parental controls & model whitelisting
+- [ ] Model whitelisting per user role
 
 ### Phase 3 — RAG & agents
 - [ ] Document ingestion (Proton Drive, GitHub repos)

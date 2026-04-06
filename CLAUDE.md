@@ -49,7 +49,7 @@ athanor-ai/
 | IaC | Terraform + GCP provider |
 | Runtime | Cloud Run (europe-west9) |
 | Container registry | Artifact Registry |
-| Database | Cloud SQL PostgreSQL (prod) / SQLite+GCS FUSE (MVP) |
+| Database | SQLite + GCS FUSE (MVP) |
 | LLM routing | OpenRouter (`https://openrouter.ai/api/v1`) |
 | Frontend | OpenWebUI (Docker image `ghcr.io/open-webui/open-webui:main`) |
 | Secrets | GCP Secret Manager |
@@ -80,6 +80,7 @@ See `docs/INDEX.md` for navigation. Key files:
 - `docs/FINOPS.md` — cost tracking, budget alerts, carbon footprint
 - `docs/FAMILY.md` — multi-user setup, parental controls
 - `docs/SECURITY.md` — IAM, secrets, data sovereignty
+- `docs/SMTP_SETUP.md` — Gmail App Password configuration
 
 ## ⚙️ Compaction Rules
 

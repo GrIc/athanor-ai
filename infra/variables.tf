@@ -51,6 +51,32 @@ variable "vertexai_proxy_api_key" {
   sensitive   = true
 }
 
+# ─── Parental Monitoring ───────────────────────────────────────────────
+variable "smtp_user" {
+  type        = string
+  description = "Gmail address for sending alerts and digests"
+  default     = ""
+}
+
+variable "smtp_password" {
+  type        = string
+  description = "Gmail App Password for SMTP"
+  sensitive   = true
+  default     = ""
+}
+
+variable "monitored_user_emails" {
+  type        = string
+  description = "Comma-separated emails of child accounts to monitor"
+  default     = ""
+}
+
+variable "parent_alert_email" {
+  type        = string
+  description = "Parent email address for receiving alerts and digests"
+  default     = ""
+}
+
 variable "labels" {
   type        = map(string)
   description = "Default labels for all resources"
