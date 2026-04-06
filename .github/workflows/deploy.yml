@@ -35,6 +35,16 @@ jobs:
       - name: Terraform Init
         run: terraform -chdir=infra init
 
+      # One-time migration: remove repo-level AR IAM bindings from state (replaced by project-level).
+      # The CI/CD SA cannot call setIamPolicy on the AR repo, so Terraform cannot destroy them.
+      # Removing from state leaves the bindings in GCP (harmless) and unblocks the apply.
+      - name: Migrate AR IAM state (repo-level → project-level)
+        run: |
+          terraform -chdir=infra state rm \
+            google_artifact_registry_repository_iam_member.cloudrun_agent_ar_access \
+            google_artifact_registry_repository_iam_member.openwebui_ar_access \
+            2>/dev/null || true
+
       - name: Terraform Apply
         run: terraform -chdir=infra apply -auto-approve
         env:
