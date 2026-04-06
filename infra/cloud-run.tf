@@ -54,7 +54,7 @@ resource "google_cloud_run_v2_service" "openwebui" {
 
       env {
         name  = "WEBUI_URL"
-        value = google_cloud_run_v2_service.openwebui.uri
+        value = "https://athanor-openwebui-${data.google_project.current.number}-${var.gcp_region}.a.run.app"
       }
 
       env {
