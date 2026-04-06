@@ -10,8 +10,8 @@ resource "google_cloud_run_v2_service" "openwebui" {
 
   depends_on = [
     terraform_data.build_openwebui_image,
-    google_artifact_registry_repository_iam_member.cloudrun_agent_ar_access,
-    google_artifact_registry_repository_iam_member.openwebui_ar_access,
+    google_project_iam_member.cloudrun_agent_ar_access,
+    google_project_iam_member.openwebui_ar_access,
   ]
 
   template {
@@ -142,8 +142,8 @@ resource "google_cloud_run_v2_service" "vertexai_proxy" {
 
   depends_on = [
     terraform_data.build_vertexai_proxy_image,
-    google_artifact_registry_repository_iam_member.cloudrun_agent_ar_access,
-    google_artifact_registry_repository_iam_member.openwebui_ar_access,
+    google_project_iam_member.cloudrun_agent_ar_access,
+    google_project_iam_member.openwebui_ar_access,
   ]
 
   template {

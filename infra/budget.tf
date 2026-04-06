@@ -4,7 +4,6 @@ resource "google_billing_budget" "monthly_budget" {
 
   depends_on = [
     google_project_service.apis,
-    google_billing_account_iam_member.cicd_billing_admin,
   ]
 
   budget_filter {

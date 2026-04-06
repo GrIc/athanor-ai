@@ -34,7 +34,7 @@ resource "google_cloud_run_v2_job" "weekly_digest" {
 
   depends_on = [
     terraform_data.build_weekly_digest_image,
-    google_artifact_registry_repository_iam_member.cloudrun_agent_ar_access,
+    google_project_iam_member.cloudrun_agent_ar_access,
   ]
 
   template {

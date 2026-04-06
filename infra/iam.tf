@@ -15,20 +15,23 @@ resource "google_secret_manager_secret_iam_member" "webui_secret_key_access" {
   member    = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
 }
 
-# Grant Artifact Registry read access to Cloud Run service agent (pulls images)
-resource "google_artifact_registry_repository_iam_member" "cloudrun_agent_ar_access" {
-  location   = google_artifact_registry_repository.athanor_images.location
-  repository = google_artifact_registry_repository.athanor_images.name
-  role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:service-${data.google_project.current.number}@serverless-robot-prod.iam.gserviceaccount.com"
+# Grant Artifact Registry read access at project level.
+# Project-level grants are used instead of repo-level because the CI/CD SA has
+# roles/resourcemanager.projectIamAdmin (can manage project IAM) but not
+# artifactregistry.repositories.setIamPolicy (repo-level IAM) — avoids bootstrap problem.
+
+# Cloud Run service agent — pulls images from Artifact Registry
+resource "google_project_iam_member" "cloudrun_agent_ar_access" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:service-${data.google_project.current.number}@serverless-robot-prod.iam.gserviceaccount.com"
 }
 
-# Grant Artifact Registry read access to runtime compute service account
-resource "google_artifact_registry_repository_iam_member" "openwebui_ar_access" {
-  location   = google_artifact_registry_repository.athanor_images.location
-  repository = google_artifact_registry_repository.athanor_images.name
-  role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
+# Default compute service account — pulls images at runtime
+resource "google_project_iam_member" "openwebui_ar_access" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
 }
 
 # Grant GCS access to default compute service account

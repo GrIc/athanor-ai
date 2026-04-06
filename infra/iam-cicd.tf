@@ -67,12 +67,16 @@ resource "google_project_iam_member" "cicd_cloud_build" {
   member  = "serviceAccount:${google_service_account.cicd.email}"
 }
 
-# Billing account access — required to manage billing budgets
-resource "google_billing_account_iam_member" "cicd_billing_admin" {
-  billing_account_id = var.gcp_billing_account_id
-  role               = "roles/billing.admin"
-  member             = "serviceAccount:${google_service_account.cicd.email}"
-}
+# BOOTSTRAP REQUIRED — Billing account IAM cannot be managed from CI/CD.
+# The billing.accounts.setIamPolicy permission is an org-level right that
+# cannot be self-granted. Run this ONCE manually as project owner:
+#
+#   gcloud billing accounts add-iam-policy-binding <BILLING_ACCOUNT_ID> \
+#     --member="serviceAccount:athanor-cicd@athanor-ai.iam.gserviceaccount.com" \
+#     --role="roles/billing.viewer"
+#
+# This allows the CI/CD SA to read billing data for budget Terraform resources.
+# It only needs to be done once — Terraform does not manage this binding.
 
 # GCS access for Terraform state
 resource "google_storage_bucket_iam_member" "cicd_tfstate" {
