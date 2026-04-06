@@ -108,7 +108,7 @@ resource "google_cloud_scheduler_job" "weekly_digest_trigger" {
   name      = "athanor-weekly-digest-trigger"
   schedule  = "0 20 * * 0" # Every Sunday at 20:00
   time_zone = "Europe/Paris"
-  region    = var.gcp_region
+  region    = "europe-west1"
 
   depends_on = [google_project_service.apis]
 
