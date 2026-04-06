@@ -9,6 +9,7 @@ resource "google_project_service" "apis" {
     "iam.googleapis.com",
     "artifactregistry.googleapis.com",
     "aiplatform.googleapis.com",
+    "cloudscheduler.googleapis.com",
   ])
 
   service            = each.key
