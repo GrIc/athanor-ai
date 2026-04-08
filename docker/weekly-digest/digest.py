@@ -103,6 +103,38 @@ def get_user_name(db_path: str, user_email: str) -> str:
     return row[0] if row else user_email
 
 
+def get_weekly_budget_usage(user_email: str) -> dict:
+    """Read budget usage from the budget_usage.json log file on GCS."""
+    try:
+        client = storage.Client()
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob("budget_usage.json")
+        if not blob.exists():
+            return {"week_spent": 0.0, "day_spent": 0.0, "week_requests": 0, "day_requests": 0}
+
+        usage = json.loads(blob.download_as_text())
+        user_key = user_email.lower().strip()
+        user_data = usage.get(user_key, {})
+
+        # Get current week and day keys
+        now = datetime.now(timezone.utc)
+        week_num = now.isocalendar()[1]
+        week_key = f"week_{now.isocalendar()[0]}_w{week_num:02d}"
+        day_key = now.strftime("day_%Y-%m-%d")
+
+        week_data = user_data.get(week_key, {"spent_eur": 0.0, "requests": 0})
+        day_data = user_data.get(day_key, {"spent_eur": 0.0, "requests": 0})
+
+        return {
+            "week_spent": round(week_data.get("spent_eur", 0.0), 2),
+            "day_spent": round(day_data.get("spent_eur", 0.0), 2),
+            "week_requests": week_data.get("requests", 0),
+            "day_requests": day_data.get("requests", 0),
+        }
+    except Exception:
+        return {"week_spent": 0.0, "day_spent": 0.0, "week_requests": 0, "day_requests": 0}
+
+
 def get_weekly_alerts(since: datetime, user_email: str) -> list[dict]:
     """Read alerts from the parental_alerts.json log file on GCS."""
     try:
@@ -142,10 +174,10 @@ def summarize_conversations(conversations: list[dict], access_token: str) -> str
         )
 
     prompt = (
-        "Tu es un assistant de monitoring parental. Voici les conversations "
-        "d'un adolescent avec une IA cette semaine. Fais un resume en 3-5 phrases "
-        "des principaux sujets abordes, du ton general, et signale tout sujet "
-        "potentiellement preoccupant (sans dramatiser). Reponds en francais.\n\n"
+        "You are a parental monitoring assistant. Here are this week's conversations "
+        "between a teenager and an AI. Write a 3-5 sentence summary covering the main "
+        "topics discussed, the general tone, and flag any potentially concerning subjects "
+        "(without dramatising). Reply in French.\n\n"
         + "\n\n".join(conv_summaries)
     )
 
@@ -236,6 +268,8 @@ def main() -> None:
             alerts = get_weekly_alerts(since, email)
             summary = summarize_conversations(conversations, access_token)
 
+            budget_usage = get_weekly_budget_usage(email)
+
             users_data.append({
                 "name": name,
                 "email": email,
@@ -250,6 +284,7 @@ def main() -> None:
                 ],
                 "summary": summary,
                 "alerts": alerts,
+                "budget_usage": budget_usage,
             })
 
         # Render HTML email (inside the with block — db still available if needed)

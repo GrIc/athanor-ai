@@ -6,7 +6,6 @@
 ## Architecture & Design
 - [ARCHITECTURE.md](ARCHITECTURE.md) — System design, component diagram, data flows
 - [DECISIONS.md](DECISIONS.md) — Architecture Decision Records overview
-- [adr-004-vertexai-sovereign-channel.md](adr-004-vertexai-sovereign-channel.md) — VertexAI proxy ADR
 
 ## Components
 - [OPENWEBUI.md](OPENWEBUI.md) — OpenWebUI configuration, pipelines, RAG, MCP

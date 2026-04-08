@@ -26,32 +26,60 @@ logger = logging.getLogger("athanor.parental_monitor")
 # Patterns are case-insensitive and match whole words where possible.
 DEFAULT_KEYWORDS = {
     "self_harm": [
-        r"\bsuicid\w*\b", r"\bse couper\b", r"\bme tuer\b", r"\benvie de mourir\b",
-        r"\bautomutilation\b", r"\bself.?harm\b", r"\bme faire du mal\b",
+        r"\bsuicid\w*\b",
+        r"\bse couper\b",
+        r"\bme tuer\b",
+        r"\benvie de mourir\b",
+        r"\bautomutilation\b",
+        r"\bself.?harm\b",
+        r"\bme faire du mal\b",
     ],
     "violence": [
-        r"\btuer quelqu\w*\b", r"\bfaire du mal\b", r"\barme\s?\w*\b",
-        r"\bfrapper\b", r"\bagresser\b", r"\bmenacer\b",
+        r"\btuer quelqu\w*\b",
+        r"\bfaire du mal\b",
+        r"\barme\s?\w*\b",
+        r"\bfrapper\b",
+        r"\bagresser\b",
+        r"\bmenacer\b",
     ],
     "drugs": [
-        r"\bdrogue\w*\b", r"\bcocaine\b", r"\bhero[iy]ne\b", r"\becstasy\b",
-        r"\bmdma\b", r"\blsd\b", r"\bfumer\s+du\b", r"\bdealer\b",
+        r"\bdrogue\w*\b",
+        r"\bcocaine\b",
+        r"\bhero[iy]ne\b",
+        r"\becstasy\b",
+        r"\bmdma\b",
+        r"\blsd\b",
+        r"\bfumer\s+du\b",
+        r"\bdealer\b",
     ],
     "sexual_predation": [
-        r"\benvoie.{0,10}photo\b", r"\bwebcam\b", r"\bnude\w*\b",
-        r"\brencontrer\s+en\s+secret\b", r"\bne dis pas\s+[aà]\s+tes\s+parents\b",
+        r"\benvoie.{0,10}photo\b",
+        r"\bwebcam\b",
+        r"\bnude\w*\b",
+        r"\brencontrer\s+en\s+secret\b",
+        r"\bne dis pas\s+[aà]\s+tes\s+parents\b",
     ],
     "cyberbullying": [
-        r"\bva mourir\b", r"\bpersonne ne t.aime\b",
-        r"\binutile\b", r"\bhar[cç]el\w*\b",
+        r"\bva mourir\b",
+        r"\bpersonne ne t.aime\b",
+        r"\binutile\b",
+        r"\bhar[cç]el\w*\b",
     ],
     "runaway": [
-        r"\bfugue\w*\b", r"\bme sauver\b", r"\bpartir de chez moi\b",
-        r"\bne plus rentrer\b", r"\bje m.enfuis\b", r"\brun away\b",
+        r"\bfugue\w*\b",
+        r"\bme sauver\b",
+        r"\bpartir de chez moi\b",
+        r"\bne plus rentrer\b",
+        r"\bje m.enfuis\b",
+        r"\brun away\b",
     ],
     "radicalization": [
-        r"\bjihad\b", r"\bdaech\b", r"\bétat islamique\b", r"\bisis\b",
-        r"\bpasser à l.acte\b", r"\battentat\b",
+        r"\bjihad\b",
+        r"\bdaech\b",
+        r"\bétat islamique\b",
+        r"\bisis\b",
+        r"\bpasser à l.acte\b",
+        r"\battentat\b",
     ],
 }
 
@@ -170,11 +198,13 @@ class Filter:
         direction: str,
     ) -> None:
         """Send an alert email to the parent."""
-        if not all([
-            self.valves.alert_email,
-            self.valves.smtp_user,
-            self.valves.smtp_password,
-        ]):
+        if not all(
+            [
+                self.valves.alert_email,
+                self.valves.smtp_user,
+                self.valves.smtp_password,
+            ]
+        ):
             logger.warning("SMTP not configured — skipping alert for %s", user_email)
             return
 
@@ -207,7 +237,9 @@ class Filter:
                 server.starttls()
                 server.login(self.valves.smtp_user, self.valves.smtp_password)
                 server.send_message(msg)
-            logger.info("Alert email sent to %s for categories: %s", user_email, categories)
+            logger.info(
+                "Alert email sent to %s for categories: %s", user_email, categories
+            )
         except smtplib.SMTPException as e:
             logger.error("SMTP error sending alert for %s: %s", user_email, e)
         except OSError as e:
@@ -236,7 +268,9 @@ class Filter:
             if len(existing) > 1000:
                 existing = existing[-1000:]
             self._log_path.parent.mkdir(parents=True, exist_ok=True)
-            self._log_path.write_text(json.dumps(existing, indent=2, ensure_ascii=False))
+            self._log_path.write_text(
+                json.dumps(existing, indent=2, ensure_ascii=False)
+            )
         except OSError as e:
             logger.error("Could not write alert log: %s", e)
 
@@ -278,9 +312,7 @@ class Filter:
 
         # Send email alerts (rate-limited per category)
         alertable = [
-            (cat, word)
-            for cat, word in matches
-            if self._should_alert(user_email, cat)
+            (cat, word) for cat, word in matches if self._should_alert(user_email, cat)
         ]
         if alertable:
             self._send_alert(user_email, user_name, alertable, content, direction)

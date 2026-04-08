@@ -77,6 +77,31 @@ variable "parent_alert_email" {
   default     = ""
 }
 
+# ─── Budget Tracking ───────────────────────────────────────────────────
+variable "default_weekly_budget_eur" {
+  type        = number
+  description = "Default weekly budget per user (EUR)"
+  default     = 2.0
+}
+
+variable "default_daily_budget_eur" {
+  type        = number
+  description = "Default daily budget per user (EUR)"
+  default     = 0.50
+}
+
+variable "user_budget_overrides_json" {
+  type        = string
+  description = "Per-user budget overrides as JSON string"
+  default     = "{}"
+}
+
+variable "budget_block_on_exceeded" {
+  type        = bool
+  description = "Block requests when budget is exceeded (or just warn)"
+  default     = true
+}
+
 variable "labels" {
   type        = map(string)
   description = "Default labels for all resources"

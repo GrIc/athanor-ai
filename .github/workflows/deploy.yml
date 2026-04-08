@@ -58,3 +58,7 @@ jobs:
           TF_VAR_smtp_password: ${{ secrets.TF_VAR_SMTP_PASSWORD }}
           TF_VAR_monitored_user_emails: ${{ secrets.TF_VAR_MONITORED_USER_EMAILS }}
           TF_VAR_parent_alert_email: ${{ secrets.TF_VAR_PARENT_ALERT_EMAIL }}
+          TF_VAR_default_weekly_budget_eur: ${{ secrets.TF_VAR_DEFAULT_WEEKLY_BUDGET_EUR }}
+          TF_VAR_default_daily_budget_eur: ${{ secrets.TF_VAR_DEFAULT_DAILY_BUDGET_EUR }}
+          TF_VAR_user_budget_overrides_json: ${{ secrets.TF_VAR_USER_BUDGET_OVERRIDES_JSON }}
+          TF_VAR_budget_block_on_exceeded: ${{ secrets.TF_VAR_BUDGET_BLOCK_ON_EXCEEDED }}

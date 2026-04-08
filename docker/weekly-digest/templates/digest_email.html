@@ -1,55 +1,101 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h1 style="color: #333;">Athanor — Digest Hebdomadaire</h1>
-  <p style="color: #666;">Semaine du {{ week_start }} au {{ week_end }}</p>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body
+    style="
+      font-family: -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    "
+  >
+    <h1 style="color: #333">Athanor — Digest Hebdomadaire</h1>
+    <p style="color: #666">Semaine du {{ week_start }} au {{ week_end }}</p>
 
-  {% for user in users %}
-  <div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
-    <h2 style="color: #444; margin-top: 0;">{{ user.name }} ({{ user.email }})</h2>
-    <p><strong>{{ user.conversation_count }}</strong> conversation(s) cette semaine</p>
+    {% for user in users %}
+    <div
+      style="
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      "
+    >
+      <h2 style="color: #444; margin-top: 0">
+        {{ user.name }} ({{ user.email }})
+      </h2>
+      <p>
+        <strong>{{ user.conversation_count }}</strong> conversation(s) cette
+        semaine
+      </p>
 
-    {% if user.conversations %}
-    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
-      <tr style="background: #f5f5f5;">
-        <th style="padding: 8px; text-align: left;">Date</th>
-        <th style="padding: 8px; text-align: left;">Titre</th>
-        <th style="padding: 8px; text-align: left;">Messages</th>
-      </tr>
-      {% for conv in user.conversations %}
-      <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 8px;">{{ conv.date }}</td>
-        <td style="padding: 8px;">{{ conv.title }}</td>
-        <td style="padding: 8px;">{{ conv.message_count }}</td>
-      </tr>
-      {% endfor %}
-    </table>
+      {% if user.conversations %}
+      <table style="width: 100%; border-collapse: collapse; margin: 10px 0">
+        <tr style="background: #f5f5f5">
+          <th style="padding: 8px; text-align: left">Date</th>
+          <th style="padding: 8px; text-align: left">Titre</th>
+          <th style="padding: 8px; text-align: left">Messages</th>
+        </tr>
+        {% for conv in user.conversations %}
+        <tr style="border-bottom: 1px solid #eee">
+          <td style="padding: 8px">{{ conv.date }}</td>
+          <td style="padding: 8px">{{ conv.title }}</td>
+          <td style="padding: 8px">{{ conv.message_count }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% endif %} {% if user.summary %}
+      <h3 style="color: #555">Resume</h3>
+      <p>{{ user.summary }}</p>
+      {% endif %} {% if user.budget_usage and user.budget_usage.week_spent > 0
+      %}
+      <h3 style="color: #2980b9">Budget</h3>
+      <table
+        style="
+          width: 100%;
+          border-collapse: collapse;
+          margin: 10px 0;
+          background: #f0f8ff;
+          border-radius: 4px;
+        "
+      >
+        <tr>
+          <td style="padding: 8px"><strong>Dépensé cette semaine</strong></td>
+          <td style="padding: 8px">{{ user.budget_usage.week_spent }} €</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px"><strong>Dépensé aujourd'hui</strong></td>
+          <td style="padding: 8px">{{ user.budget_usage.day_spent }} €</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px"><strong>Requêtes cette semaine</strong></td>
+          <td style="padding: 8px">{{ user.budget_usage.week_requests }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px"><strong>Requêtes aujourd'hui</strong></td>
+          <td style="padding: 8px">{{ user.budget_usage.day_requests }}</td>
+        </tr>
+      </table>
+      {% endif %} {% if user.alerts %}
+      <h3 style="color: #c0392b">Alertes de la semaine</h3>
+      <ul>
+        {% for alert in user.alerts %}
+        <li style="color: #c0392b">
+          {{ alert.timestamp }} — {{ alert.categories | join(', ') }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %} {% if not users %}
+    <p>Aucune activite cette semaine.</p>
     {% endif %}
 
-    {% if user.summary %}
-    <h3 style="color: #555;">Resume</h3>
-    <p>{{ user.summary }}</p>
-    {% endif %}
-
-    {% if user.alerts %}
-    <h3 style="color: #c0392b;">Alertes de la semaine</h3>
-    <ul>
-      {% for alert in user.alerts %}
-      <li style="color: #c0392b;">{{ alert.timestamp }} — {{ alert.categories | join(', ') }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-  </div>
-  {% endfor %}
-
-  {% if not users %}
-  <p>Aucune activite cette semaine.</p>
-  {% endif %}
-
-  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-  <p style="color: #999; font-size: 12px;">
-    Genere automatiquement par Athanor Parental Monitor.
-  </p>
-</body>
+    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0" />
+    <p style="color: #999; font-size: 12px">
+      Genere automatiquement par Athanor Parental Monitor.
+    </p>
+  </body>
 </html>

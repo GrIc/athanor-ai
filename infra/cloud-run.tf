@@ -1,6 +1,7 @@
 locals {
   openwebui_image      = var.openwebui_image != "" ? var.openwebui_image : "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/openwebui:latest"
   vertexai_proxy_image = "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/vertexai-proxy:latest"
+  cost_dashboard_image = "${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/cost-dashboard:latest"
 }
 
 resource "google_cloud_run_v2_service" "openwebui" {
@@ -221,6 +222,60 @@ resource "google_secret_manager_secret_version" "vertexai_proxy_api_key" {
 resource "google_cloud_run_v2_service_iam_member" "vertexai_proxy_public_access" {
   location = google_cloud_run_v2_service.vertexai_proxy.location
   name     = google_cloud_run_v2_service.vertexai_proxy.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ─── Cost Dashboard ──────────────────────────────────────────────────────
+
+resource "google_cloud_run_v2_service" "cost_dashboard" {
+  name     = "athanor-cost-dashboard"
+  location = var.gcp_region
+  labels   = var.labels
+
+  depends_on = [
+    terraform_data.build_cost_dashboard_image,
+    google_project_iam_member.cloudrun_agent_ar_access,
+    google_project_iam_member.openwebui_ar_access,
+  ]
+
+  template {
+    max_instance_request_concurrency = 80
+    scaling {
+      min_instance_count = 0 # scale-to-zero
+      max_instance_count = 1
+    }
+
+    containers {
+      image = local.cost_dashboard_image
+
+      ports {
+        container_port = 8080
+      }
+
+      resources {
+        limits = {
+          memory = "256Mi"
+          cpu    = "0.5"
+        }
+      }
+
+      env {
+        name  = "GCS_BUCKET"
+        value = google_storage_bucket.openwebui_data.name
+      }
+
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+    }
+  }
+}
+
+resource "google_cloud_run_v2_service_iam_member" "cost_dashboard_public_access" {
+  location = google_cloud_run_v2_service.cost_dashboard.location
+  name     = google_cloud_run_v2_service.cost_dashboard.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

@@ -1,6 +1,6 @@
 # Athanor — Roadmap
 
-> Last updated: 2026-04-05
+> Last updated: 2026-04-07
 
 ---
 
@@ -21,23 +21,24 @@
 ## Phase 2 — Family & Observability ← CURRENT
 
 ### 2a. Family accounts & parental controls
-- [ ] Configure family accounts in OpenWebUI (admin + 3 users)
-- [ ] Model whitelisting per user (restrict teens to Gemini Flash / free models)
-- [ ] Conversation monitoring pipeline — weekly digest of teens' AI usage (topics, time, volume)
-- [ ] Rate limiting per user (daily token budget)
+- [ ] Configure family accounts in OpenWebUI (admin + 3 users) — *manual setup, see [FAMILY_SETUP.md](FAMILY_SETUP.md)*
+- [ ] Model whitelisting per user (restrict teens to Gemini Flash / free models) — *manual via OpenWebUI Admin*
+- [x] Conversation monitoring pipeline — weekly digest of teens' AI usage (topics, time, volume)
+- [x] Budget tracking per user (€2/week default, auto-refresh prices from OpenRouter API)
 - [ ] Test mobile access (PWA) and family onboarding
 
 ### 2b. FinOps & GreenOps
 - [ ] Langfuse deployment on Cloud Run (LLM observability, scale-to-zero)
-- [ ] Per-user cost tracking: OpenRouter spend + VertexAI spend → dashboard
-- [ ] GCP Carbon Footprint API activation + export to BigQuery
+- [x] Per-user cost tracking: budget filter + cost dashboard on Cloud Run (scale-to-zero)
+- [x] GCP Carbon Footprint API activation + BigQuery datasets created
+- [ ] BigQuery billing export configuration (one-time gcloud command)
 - [ ] Monthly cost & carbon report (automated email or OpenWebUI pipeline)
 
-### 2c. Database migration
-- [ ] Migrate SQLite → Cloud SQL PostgreSQL (concurrent multi-user access)
+### 2c. Database migration — DEFERRED
+- [ ] Migrate SQLite → Cloud SQL PostgreSQL (concurrent multi-user access) — *deferred, too expensive for now*
 - [ ] Evaluate AlloyDB Omni as cheaper alternative
 
-**Success criteria**: Family actively using the platform. Each user has a cost & usage dashboard. Teens monitored without intrusion.
+**Success criteria**: Family actively using the platform. Each user has a cost & usage dashboard. Teens monitored without intrusion. Budget enforced at €2/week per user.
 
 ---
 

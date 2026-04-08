@@ -25,6 +25,7 @@ docs/OPENROUTER.md
 docs/HOME-ASSISTANT.md
 docs/OPENWEBUI.md
 docs/FINOPS.md
+docs/plan.md
 infra/envs/*
 !infra/envs/.env.prod.example
 .terraform.lock.hcl
