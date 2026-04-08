@@ -256,8 +256,8 @@ resource "google_cloud_run_v2_service" "cost_dashboard" {
       resources {
         limits = {
           memory = "256Mi"
-          cpu    = "0.25"
         }
+        # No CPU limit → Cloud Run uses throttled CPU (scale-to-zero friendly)
       }
 
       env {
