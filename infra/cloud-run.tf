@@ -240,7 +240,7 @@ resource "google_cloud_run_v2_service" "cost_dashboard" {
   ]
 
   template {
-    max_instance_request_concurrency = 80
+    max_instance_request_concurrency = 1
     scaling {
       min_instance_count = 0 # scale-to-zero
       max_instance_count = 1
@@ -256,7 +256,7 @@ resource "google_cloud_run_v2_service" "cost_dashboard" {
       resources {
         limits = {
           memory = "256Mi"
-          cpu    = "1"
+          cpu    = "0.25"
         }
       }
 
