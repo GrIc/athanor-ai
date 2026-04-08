@@ -30,9 +30,8 @@
 ### 2b. FinOps & GreenOps
 - [ ] Langfuse deployment on Cloud Run (LLM observability, scale-to-zero)
 - [x] Per-user cost tracking: budget filter + cost dashboard on Cloud Run (scale-to-zero)
-- [x] GCP Carbon Footprint API activation + BigQuery datasets created
-- [ ] BigQuery billing export configuration (one-time gcloud command)
-- [ ] Monthly cost & carbon report (automated email or OpenWebUI pipeline)
+- [ ] GCP Carbon Footprint data available via billing export in Cloud Console (no separate API)
+- [ ] Monthly cost report (automated email or OpenWebUI pipeline)
 
 ### 2c. Database migration — DEFERRED
 - [ ] Migrate SQLite → Cloud SQL PostgreSQL (concurrent multi-user access) — *deferred, too expensive for now*

@@ -10,11 +10,6 @@ resource "google_project_service" "apis" {
     "artifactregistry.googleapis.com",
     "aiplatform.googleapis.com",
     "cloudscheduler.googleapis.com",
-    # Carbon Footprint API
-    "cloudcarbonfootprint.googleapis.com",
-    # BigQuery
-    "bigquery.googleapis.com",
-    "bigquerydatatransfer.googleapis.com",
   ])
 
   service            = each.key
