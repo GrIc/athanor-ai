@@ -49,6 +49,13 @@ resource "google_project_iam_member" "cicd_editor" {
   member  = "serviceAccount:${google_service_account.cicd.email}"
 }
 
+# Cloud Run IAM administration — needed for google_cloud_run_v2_service_iam_member
+resource "google_project_iam_member" "cicd_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.cicd.email}"
+}
+
 resource "google_project_iam_member" "cicd_secret_manager" {
   project = var.project_id
   role    = "roles/secretmanager.admin"

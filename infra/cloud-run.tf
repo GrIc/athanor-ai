@@ -278,4 +278,10 @@ resource "google_cloud_run_v2_service_iam_member" "cost_dashboard_public_access"
   name     = google_cloud_run_v2_service.cost_dashboard.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+
+  # Ensure the service is created AND CI/CD has run.admin role before applying IAM
+  depends_on = [
+    google_cloud_run_v2_service.cost_dashboard,
+    google_project_iam_member.cicd_run_admin,
+  ]
 }
