@@ -1,0 +1,549 @@
+"""
+Resilient OpenAI-compatible client with aggressive retry logic.
+Handles 500, 502, 503, 429 with exponential backoff + jitter.
+
+Supports automatic response completion when finish_reason == "length":
+    client.chat(..., complete=True)
+
+Supports chat_multimodal(messages_with_images) method (for OCR via Gemini)
+"""
+
+import os
+import time
+import random
+import logging
+from typing import Iterator, Optional
+
+import httpx
+from openai import OpenAI
+
+logger = logging.getLogger(__name__)
+
+
+def _is_retryable(exc: Exception) -> bool:
+    """Determine if an exception is retryable."""
+    exc_str = str(exc).lower()
+    for code in ("500", "502", "503", "429", "timeout", "connection", "remoteprotocol"):
+        if code in exc_str:
+            return True
+    if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError)):
+        return True
+    return False
+
+
+def _format_error(e: Exception) -> str:
+    """Extract maximum detail from an exception."""
+    parts = [f"{type(e).__name__}: {e}"]
+
+    if hasattr(e, "status_code"):
+        parts.append(f"HTTP status: {e.status_code}")
+    if hasattr(e, "response") and e.response is not None:
+        try:
+            parts.append(f"Response body: {e.response.text[:500]}")
+        except Exception:
+            pass
+    if hasattr(e, "request") and e.request is not None:
+        try:
+            parts.append(f"Request URL: {e.request.url}")
+            parts.append(f"Request method: {e.request.method}")
+        except Exception:
+            pass
+
+    if isinstance(e, httpx.HTTPStatusError):
+        parts.append(f"Response: {e.response.status_code} {e.response.text[:300]}")
+
+    return " | ".join(parts)
+
+
+class ResilientClient:
+    """OpenAI client wrapper with built-in retry & fallback model logic."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        max_retries: int = 8,
+        base_delay: float = 2.0,
+        max_delay: float = 120.0,
+        timeout: float = 180.0,
+    ):
+        self.api_key = api_key or os.getenv("VERTEXAI_PROXY_KEY", "")
+        self.base_url = base_url or os.getenv("VERTEXAI_PROXY_URL", "")
+        self.max_retries = max_retries
+        self.base_delay = base_delay
+        self.max_delay = max_delay
+
+        masked_key = self.api_key[:8] + "..." if len(self.api_key) > 8 else "***"
+        logger.info(f"[Client] base_url = {self.base_url}")
+        logger.info(f"[Client] api_key  = {masked_key}")
+        logger.info(f"[Client] timeout  = {timeout}s, max_retries = {max_retries}")
+
+        http_client = httpx.Client(
+            timeout=httpx.Timeout(timeout, connect=30.0),
+            limits=httpx.Limits(max_connections=5),
+            verify=False,  # For internal APIs with self-signed certs
+        )
+
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            http_client=http_client,
+            max_retries=0,  # We handle retries ourselves
+        )
+
+        logger.info(f"[Client] OpenAI client initialized -> {self.base_url}")
+
+    def chat(
+        self,
+        messages: list[dict],
+        model: str,
+        temperature: float = 0.5,
+        max_tokens: int = 4096,
+        fallback_models: Optional[list[str]] = None,
+        complete: bool = False,
+        max_completion_attempts: int = 5,
+        **kwargs,
+    ) -> str:
+        """
+        Send a chat completion with retries and optional model fallback.
+
+        Args:
+            complete: If True, automatically continue the request when the model
+                      stops due to max_tokens (finish_reason == "length"), until
+                      the response is naturally complete or max_completion_attempts
+                      is reached. Useful for long document generation tasks.
+            max_completion_attempts: Maximum number of continuation rounds when
+                                     complete=True (default: 5).
+        """
+        models_to_try = [model] + (fallback_models or [])
+
+        total_chars = sum(len(m.get("content", "")) for m in messages)
+        logger.info(
+            f"[Chat] model={model}, messages={len(messages)}, "
+            f"total_chars={total_chars}, temperature={temperature}, complete={complete}"
+        )
+
+        for i, current_model in enumerate(models_to_try):
+            try:
+                content, finish_reason = self._chat_with_retry(
+                    messages=messages,
+                    model=current_model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                )
+
+                if complete and finish_reason == "length":
+                    content = self._complete_response(
+                        messages=messages,
+                        model=current_model,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        partial=content,
+                        max_attempts=max_completion_attempts,
+                        **kwargs,
+                    )
+
+                return content
+
+            except Exception as e:
+                if i < len(models_to_try) - 1:
+                    logger.warning(
+                        f"[Chat] Model {current_model} failed: {_format_error(e)}. "
+                        f"Falling back to {models_to_try[i+1]}"
+                    )
+                else:
+                    logger.error(f"[Chat] All models exhausted. Last error: {_format_error(e)}")
+                    raise
+
+    def chat_stream(
+        self,
+        messages: list[dict],
+        model: str,
+        temperature: float = 0.5,
+        max_tokens: int = 4096,
+        fallback_models: Optional[list[str]] = None,
+        **kwargs,
+    ) -> Iterator[str]:
+        """
+        Stream a chat completion, yielding chunks of text.
+
+        Tries native streaming first (stream=True). If the upstream does not
+        support it (exception or no delta.content), falls back to calling
+        self.chat() and yields the full response in a single chunk.
+
+        Respects the same retry logic as chat().
+        """
+        models_to_try = [model] + (fallback_models or [])
+
+        total_chars = sum(len(m.get("content", "")) for m in messages)
+        logger.info(
+            f"[ChatStream] model={model}, messages={len(messages)}, "
+            f"total_chars={total_chars}, temperature={temperature}"
+        )
+
+        for i, current_model in enumerate(models_to_try):
+            try:
+                yielded = False
+                for chunk in self._chat_stream_with_retry(
+                    messages=messages,
+                    model=current_model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                ):
+                    yielded = True
+                    yield chunk
+
+                if yielded:
+                    return
+
+                # Native streaming returned nothing — fallback
+                logger.warning(
+                    f"[ChatStream] Native streaming yielded nothing for {current_model}, "
+                    f"falling back to non-streaming chat()"
+                )
+
+            except Exception as e:
+                # Check if this is a streaming-unsupported error
+                err_str = str(e).lower()
+                is_stream_error = any(
+                    kw in err_str
+                    for kw in ("stream", "not supported", "not available")
+                )
+
+                if is_stream_error or not yielded:
+                    # Fallback: use non-streaming chat
+                    logger.warning(
+                        f"[ChatStream] Streaming not supported by upstream for "
+                        f"{current_model}: {_format_error(e)}. Falling back to chat()."
+                    )
+                    try:
+                        full_response = self.chat(
+                            messages=messages,
+                            model=current_model,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                            fallback_models=None,  # Don't recurse into fallbacks again
+                            **kwargs,
+                        )
+                        yield full_response
+                        return
+                    except Exception as fallback_exc:
+                        logger.error(
+                            f"[ChatStream] Fallback chat() also failed: {_format_error(fallback_exc)}"
+                        )
+                        raise
+
+                if i < len(models_to_try) - 1:
+                    logger.warning(
+                        f"[ChatStream] Model {current_model} failed: {_format_error(e)}. "
+                        f"Falling back to {models_to_try[i+1]}"
+                    )
+                else:
+                    logger.error(
+                        f"[ChatStream] All models exhausted. Last error: {_format_error(e)}"
+                    )
+                    raise
+
+        # Should not reach here, but safety net
+        logger.warning("[ChatStream] No content yielded — returning empty")
+        yield ""
+
+    def _chat_stream_with_retry(
+        self,
+        messages: list[dict],
+        model: str,
+        temperature: float,
+        max_tokens: int,
+        **kwargs,
+    ) -> Iterator[str]:
+        """
+        Native streaming request with exponential-backoff retry.
+
+        Yields delta.content chunks. Skips chunks where delta.content is None.
+        """
+        last_exc = None
+        for attempt in range(self.max_retries):
+            try:
+                logger.debug(
+                    f"[ChatStream] Attempt {attempt+1}/{self.max_retries} -> "
+                    f"POST {self.base_url}/chat/completions model={model} (stream=True)"
+                )
+                stream = self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    stream=True,
+                    **kwargs,
+                )
+
+                had_content = False
+                for chunk in stream:
+                    delta = chunk.choices[0].delta if chunk.choices else None
+                    if delta is None:
+                        continue
+                    content = delta.content
+                    if content is None:
+                        continue
+                    had_content = True
+                    yield content
+
+                if not had_content:
+                    logger.warning(
+                        f"[ChatStream] Native stream returned no content for {model}"
+                    )
+
+                return
+
+            except Exception as e:
+                last_exc = e
+                retryable = _is_retryable(e)
+                detail = _format_error(e)
+
+                if not retryable:
+                    logger.error(
+                        f"[ChatStream] Non-retryable error on attempt {attempt+1}: {detail}"
+                    )
+                    raise
+
+                delay = min(
+                    self.base_delay * (2 ** attempt) + random.uniform(0, 1),
+                    self.max_delay,
+                )
+                logger.warning(
+                    f"[ChatStream] Attempt {attempt+1}/{self.max_retries} failed: {detail} "
+                    f"-- retrying in {delay:.1f}s"
+                )
+                time.sleep(delay)
+
+        raise RuntimeError(
+            f"All {self.max_retries} attempts failed for streaming model {model}: {_format_error(last_exc)}"
+        ) from last_exc
+
+    def _complete_response(
+        self,
+        messages: list[dict],
+        model: str,
+        temperature: float,
+        max_tokens: int,
+        partial: str,
+        max_attempts: int,
+        **kwargs,
+    ) -> str:
+        """
+        Continue a truncated response (finish_reason == "length") until the model
+        stops naturally or max_attempts is exhausted.
+        """
+        full_content = partial
+
+        for attempt in range(max_attempts):
+            logger.warning(
+                f"[Chat] Response truncated (finish_reason=length) — "
+                f"continuation {attempt + 1}/{max_attempts} "
+                f"(accumulated: {len(full_content)} chars)"
+            )
+
+            continuation_messages = list(messages) + [
+                {"role": "assistant", "content": full_content},
+                {
+                    "role": "user",
+                    "content": (
+                        "Continue your response from where you left off. "
+                        "Do not repeat or summarize what you have already written, "
+                        "just continue seamlessly."
+                    ),
+                },
+            ]
+
+            chunk, finish_reason = self._chat_with_retry(
+                messages=continuation_messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs,
+            )
+
+            full_content += chunk
+
+            if finish_reason != "length":
+                logger.info(
+                    f"[Chat] Response completed after {attempt + 1} continuation(s) "
+                    f"(finish_reason={finish_reason}, total={len(full_content)} chars)"
+                )
+                break
+        else:
+            logger.warning(
+                f"[Chat] Response still incomplete after {max_attempts} continuations "
+                f"(total={len(full_content)} chars). Consider increasing max_tokens."
+            )
+
+        return full_content
+
+    def _chat_with_retry(
+        self,
+        messages: list[dict],
+        model: str,
+        temperature: float,
+        max_tokens: int,
+        **kwargs,
+    ) -> tuple[str, str]:
+        """
+        Send a single chat request with exponential-backoff retry.
+
+        Returns:
+            (content, finish_reason) — finish_reason is "stop", "length",
+            "tool_calls", "content_filter", or "stop" when unknown.
+        """
+        last_exc = None
+        for attempt in range(self.max_retries):
+            try:
+                logger.debug(
+                    f"[Chat] Attempt {attempt+1}/{self.max_retries} -> "
+                    f"POST {self.base_url}/chat/completions model={model}"
+                )
+                resp = self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                )
+                content = resp.choices[0].message.content or ""
+                finish_reason = resp.choices[0].finish_reason or "stop"
+
+                if finish_reason == "length":
+                    logger.warning(
+                        f"[Chat] finish_reason=length — response cut at {len(content)} chars "
+                        f"(max_tokens={max_tokens}). Use complete=True to continue automatically."
+                    )
+                else:
+                    logger.debug(f"[Chat] OK: {len(content)} chars, finish_reason={finish_reason}")
+
+                return content, finish_reason
+
+            except Exception as e:
+                last_exc = e
+                retryable = _is_retryable(e)
+                detail = _format_error(e)
+
+                if not retryable:
+                    logger.error(
+                        f"[Chat] Non-retryable error on attempt {attempt+1}: {detail}"
+                    )
+                    raise
+
+                delay = min(
+                    self.base_delay * (2 ** attempt) + random.uniform(0, 1),
+                    self.max_delay,
+                )
+                logger.warning(
+                    f"[Chat] Attempt {attempt+1}/{self.max_retries} failed: {detail} "
+                    f"-- retrying in {delay:.1f}s"
+                )
+                time.sleep(delay)
+
+        raise RuntimeError(
+            f"All {self.max_retries} attempts failed for model {model}: {_format_error(last_exc)}"
+        ) from last_exc
+
+    def embed(
+        self,
+        texts: list[str],
+        model: Optional[str] = None,
+    ) -> list[list[float]]:
+        """Get embeddings with retry logic."""
+        model = model or os.getenv("VERTEXAI_PROXY_MODEL_EMBED", "")
+        if not model:
+            raise ValueError("No embedding model configured. Set 'models.embed' in config.yaml or VERTEXAI_PROXY_MODEL_EMBED env var.")
+
+        # Truncate texts for embedding models (~750 tokens ~ 3000 chars)
+        MAX_CHARS = 3000
+        truncated = [t[:MAX_CHARS] if len(t) > MAX_CHARS else t for t in texts]
+
+        total_chars = sum(len(t) for t in truncated)
+        logger.info(
+            f"[Embed] model={model}, texts={len(truncated)}, "
+            f"total_chars={total_chars}, "
+            f"avg_chars={total_chars // max(len(truncated), 1)}"
+        )
+
+        all_embeddings = []
+        batch_size = 8
+        for i in range(0, len(truncated), batch_size):
+            batch = truncated[i : i + batch_size]
+            batch_chars = sum(len(t) for t in batch)
+            logger.debug(
+                f"[Embed] Batch {i//batch_size + 1}: {len(batch)} texts, {batch_chars} chars"
+            )
+            emb = self._embed_with_retry(batch, model)
+            all_embeddings.extend(emb)
+
+        logger.info(f"[Embed] OK: {len(all_embeddings)} embeddings")
+        return all_embeddings
+
+    def _embed_with_retry(
+        self, texts: list[str], model: str
+    ) -> list[list[float]]:
+        last_exc = None
+        for attempt in range(self.max_retries):
+            try:
+                logger.debug(
+                    f"[Embed] Attempt {attempt+1}/{self.max_retries} -> "
+                    f"POST {self.base_url}/embeddings model={model} "
+                    f"texts={len(texts)} chars={sum(len(t) for t in texts)}"
+                )
+                resp = self.client.embeddings.create(
+                    model=model,
+                    input=texts,
+                )
+                dims = len(resp.data[0].embedding) if resp.data else 0
+                logger.debug(
+                    f"[Embed] OK: {len(resp.data)} embeddings, dim={dims}"
+                )
+                return [item.embedding for item in resp.data]
+            except Exception as e:
+                last_exc = e
+                retryable = _is_retryable(e)
+                detail = _format_error(e)
+
+                if not retryable:
+                    logger.error(
+                        f"[Embed] Non-retryable error on attempt {attempt+1}: {detail}"
+                    )
+                    raise
+
+                delay = min(
+                    self.base_delay * (2 ** attempt) + random.uniform(0, 1),
+                    self.max_delay,
+                )
+                logger.warning(
+                    f"[Embed] Attempt {attempt+1}/{self.max_retries} failed: {detail} "
+                    f"-- retrying in {delay:.1f}s"
+                )
+                time.sleep(delay)
+
+        logger.error(
+            f"[Embed] All {self.max_retries} attempts failed: {_format_error(last_exc)}"
+        )
+        raise RuntimeError(
+            f"Embedding failed after {self.max_retries} retries: {_format_error(last_exc)}"
+        ) from last_exc
+
+    def chat_multimodal(
+        self,
+        model: str,
+        text_prompt: str,
+        image_b64: str,
+        image_mime: str = "image/png"
+    ) -> str:
+        """Send a multimodal message (text + image). Returns text response."""
+        messages = [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": text_prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{image_mime};base64,{image_b64}"}},
+            ]
+        }]
+        return self.chat(messages=messages, model=model, temperature=0.0, max_tokens=4096)

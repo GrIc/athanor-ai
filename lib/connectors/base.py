@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Protocol, runtime_checkable
 
 
@@ -16,11 +17,13 @@ class ProjectInfo:
     """Information about a Proton Drive project discovered via marker file."""
 
     name: str
+    source_paths: List[str] = field(default_factory=list)
     description: str = ""
     graph_enabled: bool = False
     feeds_into: List[str] = field(default_factory=list)
     system_prompt_hint: str = ""
     exclude: List[str] = field(default_factory=list)
+    config: dict = field(default_factory=dict)
 
 
 @runtime_checkable
@@ -37,13 +40,18 @@ class DriveConnector(Protocol):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def download(self, project_name: str, dest_dir: str) -> None:
+    def download_project_files(self, project: ProjectInfo, dest_path: Path) -> List[Path]:
         """Download a project's files to a temporary directory.
 
         Args:
-            project_name: The project name (from marker file suffix).
-            dest_dir: Absolute path to directory where files should be downloaded.
+            project: The project info.
+            dest_path: Absolute path to directory where files should be downloaded.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def delete_temp_files(self, dest_path: Path) -> None:
+        """Delete temporary files."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -54,4 +62,9 @@ class DriveConnector(Protocol):
             project_name: The project name.
             checkpoint_content: The content of the checkpoint.md file.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def read_checkpoint(self, project_name: str) -> str | None:
+        """Read checkpoint content for a project."""
         raise NotImplementedError

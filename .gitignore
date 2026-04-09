@@ -8,6 +8,7 @@ terraform.tfvars
 # Python files
 __pycache__/
 *.pyc
+venv/
 .env
 
 # macOS
