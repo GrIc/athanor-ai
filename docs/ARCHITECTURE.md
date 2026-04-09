@@ -3,38 +3,60 @@
 ## System Overview
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                     CLIENTS                            │
-│  Web/Mobile (PWA) ──┐                                  │
-│  VSCode/Roo Code ───┤── OpenRouter ──► LLM Providers   │
-│  Terminal CLI ──────┤   (routing)     (Claude, GPT,    │
-│  Home Assistant ────┘                  Mistral, etc.)  │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                         CLIENTS                             │
+│  Web/Mobile (PWA)  ──┐                                      │
+│  VSCode/Roo Code   ──┤                                      │
+│  Terminal CLI      ──┤                                      │
+│  Home Assistant    ──┘                                      │
+└─────────────────────────────────────────────────────────────┘
               │
               ▼
-┌────────────────────────┐     ┌─────────────────────┐
-│  GCP Cloud Run         │     │  OpenRouter.ai      │
-│  (europe-west9)        │     │  (SaaS, pay/token)  │
-│                        │     │                     │
-│  ┌──────────────────┐  │     │  Single API URL     │
-│  │ OpenWebUI        │──┼────►│  Model switching    │
-│  │ + Pipelines      │  │     │  Analytics          │
-│  │ + RAG (ChromaDB) │  │     └─────────────────────┘
-│  └──────────────────┘  │
-│                        │
-│  ┌──────────────────┐  │     ┌─────────────────────┐
-│  │ SQLite + GCS FUSE│  │     │  Observability      │
-│  │ (MVP)            │  │     │  - GCP Billing API  │
-│  └──────────────────┘  │     │  - Carbon Footprint │
-│                        │     │  - Langfuse (opt.)  │
-│  ┌──────────────────┐  │     └─────────────────────┘
-│  │ GCS Buckets      │  │
-│  │ (storage/RAG)    │  │     ┌─────────────────────┐
-│  └──────────────────┘  │     │  Home Assistant     │
-└────────────────────────┘     │  (Raspberry Pi)     │
-                               │  Local network only │
-                               └─────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  GCP Cloud Run (europe-west9)                                        │
+│                                                                      │
+│  ┌─────────────────────────────┐     ┌──────────────────────────┐   │
+│  │  athanor-openwebui          │     │  OpenRouter.ai (SaaS)    │   │
+│  │  + Pipe functions           │────►│  General LLMs            │   │
+│  │  + Budget/parental filters  │     │  (Claude, GPT, Mistral)  │   │
+│  │  + SQLite / GCS FUSE        │     └──────────────────────────┘   │
+│  └────────────┬────────────────┘                                     │
+│               │ Pipe calls (HTTP + Bearer)                           │
+│               ▼                                                      │
+│  ┌─────────────────────────────┐     ┌──────────────────────────┐   │
+│  │  athanor-rag  [Phase 3]     │────►│  athanor-vertexai-proxy  │   │
+│  │  FastAPI                    │     │  Gemini models (EU only) │   │
+│  │  - /v1/chat/completions     │     │  + embeddings            │   │
+│  │  - /api/search              │     └──────────────────────────┘   │
+│  │  - /ingest/trigger          │           │ VertexAI API           │
+│  │  ChromaDB (in-memory)       │           ▼                        │
+│  │  loaded from GCS snapshot   │     ┌──────────────────────────┐   │
+│  └─────────────────────────────┘     │  GCP Vertex AI           │   │
+│                                      │  (europe-west9)          │   │
+│  ┌─────────────────────────────┐     └──────────────────────────┘   │
+│  │  athanor-ingest  [Phase 3]  │                                     │
+│  │  Cloud Run Job (scheduled)  │                                     │
+│  │  Parse PDF/DOCX/PPTX        │                                     │
+│  │  Embed via VertexAI Proxy   │                                     │
+│  │  Dump ChromaDB → GCS        │                                     │
+│  └─────────────────────────────┘                                     │
+│                                                                      │
+│  ┌─────────────────────────────┐     ┌──────────────────────────┐   │
+│  │  athanor-cost-dashboard     │     │  GCS Buckets             │   │
+│  │  athanor-weekly-digest      │     │  - athanor-data/         │   │
+│  │  (existing)                 │     │    (OpenWebUI SQLite)    │   │
+│  └─────────────────────────────┘     │  - athanor-rag-data/     │   │
+│                                      │    documents/            │   │
+│                                      │    .vectordb/ (snapshots)│   │
+│                                      └──────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
+
+### Data Sovereignty Rule
+
+**RAG pipeline (family documents) → VertexAI only. Never OpenRouter.**
+
+This is enforced architecturally: `athanor-rag` only has `VERTEXAI_PROXY_URL` in its config. There is no OpenRouter API key in the RAG service.
 
 ## Design Principles
 
@@ -43,14 +65,27 @@
 3. **EU sovereign**: all data in europe-west9, Proton Drive as family data source
 4. **Observable**: cost, performance, and carbon tracked from day 1
 
-## Data Flow
+## Data Flows
 
-1. User opens OpenWebUI (web/PWA) or sends request via IDE/CLI
-2. OpenWebUI formats the request and sends to OpenRouter API
+### Standard LLM (general use)
+1. User opens OpenWebUI → selects a model (Claude, Gemini, etc.)
+2. OpenWebUI sends request to OpenRouter API
 3. OpenRouter routes to the selected LLM provider
 4. Response flows back through OpenWebUI to the user
-5. Conversations stored in SQLite/PostgreSQL on Cloud Run
-6. RAG documents stored in GCS, embeddings in ChromaDB (co-located)
+5. Conversations stored in SQLite on GCS FUSE
+
+### RAG / Family Documents (sovereign)
+1. User selects "Document Search" (or other RAG agent) in OpenWebUI
+2. OpenWebUI Pipe function calls `athanor-rag /v1/chat/completions`
+3. `athanor-rag` searches in-memory ChromaDB (loaded from GCS snapshots at startup)
+4. `athanor-rag` calls `athanor-vertexai-proxy` for embeddings + LLM response
+5. VertexAI Proxy calls GCP Vertex AI (eu-west9 only)
+6. Response flows back to OpenWebUI → user
+
+### Document Ingestion (nightly or on-demand)
+1. Documents synced from Proton Drive → GCS via rclone
+2. `athanor-ingest` job runs: parse → chunk → embed → ChromaDB dump → GCS
+3. `athanor-rag` calls `POST /api/reload` or restarts to load new snapshot
 
 ## Cost Model (Monthly Estimates)
 

@@ -1,1 +1,1 @@
-Phase 2 — Family & Observability: PostgreSQL migration, Langfuse, parental controls, FinOps/GreenOps dashboards
+Phase 3 — RAG & Knowledge Base: DriveConnector (Proton Drive via rclone), athanor-ingest job (ephemeral downloads → embed → GCS snapshot), athanor-rag FastAPI service (EphemeralClient + GCS json.gz), marker file discovery (athanor.*), CMEK, feeds_into cross-project injection, OpenWebUI Pipe per project

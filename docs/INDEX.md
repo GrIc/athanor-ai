@@ -6,6 +6,8 @@
 ## Architecture & Design
 - [ARCHITECTURE.md](ARCHITECTURE.md) — System design, component diagram, data flows
 - [DECISIONS.md](DECISIONS.md) — Architecture Decision Records overview
+- [RAG_IMPLEMENTATION.md](RAG_IMPLEMENTATION.md) — Phase 3 RAG implementation spec (Roo Code guide)
+- [CONNECTORS.md](CONNECTORS.md) — DriveConnector ABC interface + rclone setup + marker file YAML guide
 
 ## Components
 - [OPENWEBUI.md](OPENWEBUI.md) — OpenWebUI configuration, pipelines, RAG, MCP
@@ -21,4 +23,4 @@
 ## Development
 - [CONTRIBUTING.md](CONTRIBUTING.md) — How to contribute, coding standards, PR process
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Common issues and fixes
-- [ROADMAP.md](ROADMAP.md) — Project phases and current status (Phase 2)
+- [ROADMAP.md](ROADMAP.md) — Project phases and current status (Phase 3 — RAG)

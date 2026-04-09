@@ -10,12 +10,21 @@ Repo: `athanor-ai` | License: Apache 2.0 | All code, docs, commits: **English on
 3. **Scale-to-zero mandatory** — reject any component that costs money at rest
 4. **EU regions only** — `europe-west9` (Paris) or `europe-west1` (Belgium)
 5. **Conventional commits** — `feat:`, `fix:`, `infra:`, `docs:`, `chore:`
+6. **No documents on GCS** — Proton Drive files are downloaded to `/tmp/ingest/{project}/` and deleted in a `finally` block. The GCS bucket `athanor-ai-rag-data` contains ONLY: `.vectordb/*.json.gz`, `.graphdb/*/`, `checkpoints/*.md`, `manifest.json`. Never PDF, DOCX, images.
+7. **ChromaDB EphemeralClient only** — never `PersistentClient` or SQLite-on-GCS-FUSE. Load from `json.gz` snapshot at startup, save back to GCS after ingest.
+8. **VertexAI Proxy only for RAG** — all LLM/embedding calls in `athanor-rag` and `athanor-ingest` go through `VERTEXAI_PROXY_URL`. Never OpenRouter.
 
 ## Project Structure
 ```
 athanor-ai/
 ├── infra/              # Terraform (flat structure, envs/ for tfvars)
-├── docker/             # Custom Dockerfiles (openwebui, vertexai-proxy)
+├── docker/             # Custom Dockerfiles (openwebui, vertexai-proxy, athanor-rag, athanor-ingest)
+├── lib/                # Shared Python libraries (Phase 3 RAG)
+│   ├── connectors/     # DriveConnector ABC + ProtonDriveConnector (rclone)
+│   ├── rag_core/       # VectorStore, ingest parsers, OCR, graph, client
+│   └── agents/         # BaseAgent, render_system_prompt()
+├── agents/
+│   └── defs/           # Agent template markdown (default.md — one generic template)
 ├── pipelines/          # OpenWebUI pipelines (Python)
 ├── scripts/            # Utility scripts (setup, deploy)
 ├── docs/               # Extended docs (see docs/INDEX.md)

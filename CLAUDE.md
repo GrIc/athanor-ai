@@ -11,6 +11,8 @@ Repo: `athanor-ai` | License: Apache 2.0 | Lang: English (code, docs, commits)
 4. **EU-only hosting** — `europe-west9` (Paris) or `europe-west1` (Belgium). No other regions.
 5. **English only** — all code, comments, docs, commit messages in English.
 6. **Commit early, commit often** — atomic commits with conventional commit messages.
+7. **No Drive data on GCS** — Proton Drive documents (PDF, DOCX, images, etc.) are NEVER written to GCS. Only vectordb snapshots (`json.gz`), knowledge graphs, checkpoints, and `manifest.json` are stored on GCS. Documents are downloaded to `/tmp/` and always deleted in a `finally` block.
+8. **ChromaDB EphemeralClient only** — never `PersistentClient`. Snapshots saved/loaded as `json.gz` via `collection.get(include=["documents","metadatas","embeddings"])`. See `docs/RAG_IMPLEMENTATION.md`.
 
 ## 🚀 Quick Start
 

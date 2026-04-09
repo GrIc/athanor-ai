@@ -7,11 +7,16 @@
 - Use modules in `infra/modules/` — never inline complex resources in `main.tf`
 - Cloud Run: always `min_instance_count = 0` (scale-to-zero)
 
-## Python (pipelines/, scripts/)
+## Python (pipelines/, scripts/, lib/)
 - Format: `black`
 - Lint: `ruff`
 - Type hints on all function signatures
 - Docstrings on public functions
+- `lib/` modules: no CLI code, no `rich`, no `typer` — pure library classes
+- `lib/rag_core/`: every module must be importable without network calls (lazy init of clients)
+- ChromaDB: always `chromadb.EphemeralClient()`, never `PersistentClient`
+- Temp files: always `shutil.rmtree(path)` in `finally` blocks — never in `try` only
+- LLM clients: always read `VERTEXAI_PROXY_URL` and `VERTEXAI_PROXY_KEY` from env; never hardcoded URLs
 
 ## Docker (docker/)
 - Multi-stage builds
