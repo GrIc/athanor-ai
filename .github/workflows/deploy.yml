@@ -62,3 +62,9 @@ jobs:
           TF_VAR_default_daily_budget_eur: ${{ secrets.TF_VAR_DEFAULT_DAILY_BUDGET_EUR }}
           TF_VAR_user_budget_overrides_json: ${{ secrets.TF_VAR_USER_BUDGET_OVERRIDES_JSON }}
           TF_VAR_budget_block_on_exceeded: ${{ secrets.TF_VAR_BUDGET_BLOCK_ON_EXCEEDED }}
+          TF_VAR_rag_api_key: ${{ secrets.TF_VAR_RAG_API_KEY }}
+          TF_VAR_rclone_conf: ${{ secrets.TF_VAR_RCLONE_CONF }}
+          TF_VAR_connector_type: proton
+          TF_VAR_proton_drive_root: /
+          TF_VAR_ocr_model: gemini-2.5-flash
+          TF_VAR_embed_model: text-multilingual-embedding-002
