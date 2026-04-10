@@ -111,3 +111,41 @@ variable "labels" {
     managed-by = "terraform"
   }
 }
+
+# ─── Phase 3 RAG Variables ───────────────────────────────────────────────────
+
+variable "connector_type" {
+  type        = string
+  description = "Drive connector type (only 'proton' implemented)"
+  default     = "proton"
+}
+
+variable "proton_drive_root" {
+  type        = string
+  description = "Root path on Proton Drive to scan for athanor.* markers"
+  default     = "/"
+}
+
+variable "ocr_model" {
+  type        = string
+  description = "Gemini model for OCR (configurable for future model upgrades)"
+  default     = "gemini-2.5-flash"
+}
+
+variable "embed_model" {
+  type        = string
+  description = "VertexAI embedding model"
+  default     = "text-multilingual-embedding-002"
+}
+
+variable "rag_api_key" {
+  type        = string
+  sensitive   = true
+  description = "Bearer token for athanor-rag inbound API auth"
+}
+
+variable "rclone_conf" {
+  type        = string
+  sensitive   = true
+  description = "Full content of rclone.conf for Proton Drive"
+}

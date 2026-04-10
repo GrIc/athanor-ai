@@ -84,3 +84,47 @@ resource "terraform_data" "build_cost_dashboard_image" {
 
   depends_on = [google_artifact_registry_repository.athanor_images]
 }
+
+# Build the Athanor RAG image via Cloud Build
+resource "terraform_data" "build_athanor_rag_image" {
+  triggers_replace = [
+    google_artifact_registry_repository.athanor_images.id,
+    filemd5("${path.module}/../docker/athanor-rag/Dockerfile"),
+    filemd5("${path.module}/../docker/athanor-rag/requirements.txt"),
+    filemd5("${path.module}/../docker/athanor-rag/main.py"),
+  ]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Note: requires the build context to be the project root so we can include lib/
+      gcloud builds submit ${path.module}/.. \
+        --config ${path.module}/../docker/athanor-rag/cloudbuild.yaml \
+        --project ${var.project_id} \
+        --substitutions=_IMAGE_NAME=${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/athanor-rag:latest
+    EOT
+  }
+
+  depends_on = [google_artifact_registry_repository.athanor_images]
+}
+
+# Build the Athanor Ingest image via Cloud Build
+resource "terraform_data" "build_athanor_ingest_image" {
+  triggers_replace = [
+    google_artifact_registry_repository.athanor_images.id,
+    filemd5("${path.module}/../docker/athanor-ingest/Dockerfile"),
+    filemd5("${path.module}/../docker/athanor-ingest/requirements.txt"),
+    filemd5("${path.module}/../docker/athanor-ingest/ingest_job.py"),
+  ]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Note: requires the build context to be the project root so we can include lib/
+      gcloud builds submit ${path.module}/.. \
+        --config ${path.module}/../docker/athanor-ingest/cloudbuild.yaml \
+        --project ${var.project_id} \
+        --substitutions=_IMAGE_NAME=${var.gcp_region}-docker.pkg.dev/${var.project_id}/athanor-images/athanor-ingest:latest
+    EOT
+  }
+
+  depends_on = [google_artifact_registry_repository.athanor_images]
+}
